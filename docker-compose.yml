@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=practice
+      - POSTGRES_USER=practice
+      - POSTGRES_PASSWORD=devpassword
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:35000:5432"
+  redis:
+    image: redis:latest
+    ports:
+      - "127.0.0.1:35100:6379"
+    command: redis-server --save ""
+
+volumes:
+  postgres-data:
+    driver: local

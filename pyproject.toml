@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "fastapi-practice"
+version = "0.1.0"
+description = ""
+authors = ["강석영 <ksge1124@gmail.com>"]
+readme = "README.md"
+packages = [{include = "fastapi_practice"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.88.0"
+uvicorn = "^0.20.0"
+sqlalchemy = "^1.4.44"
+asyncpg = "^0.27.0"
+greennet = "^0.1.0"
+psycopg2 = "^2.9.5"
+psycopg2-binary = "^2.9.5"
+alembic = "^1.8.1"
+black = "^22.10.0"
+pyjwt = "^2.6.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
