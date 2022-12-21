@@ -20,13 +20,13 @@ class AuthUtilError(Exception):
 def generate_hashed_password(password: str) -> str:
     pbkdf2_salt = os.urandom(16)
     pw_hash = hashlib.pbkdf2_hmac(
-        _PBKDF2_HASH_NAME,
-        password.encode("utf-8"),
-        pbkdf2_salt,
-        _PBKDF2_ITERATIONS,
+        _PBKDF2_HASH_NAME,  #hash_name
+        password.encode("utf-8"),  #password
+        pbkdf2_salt,  #salt
+        _PBKDF2_ITERATIONS,  # iterations
     )
     return "%s:%s" % (
-        binascii.hexlify(pbkdf2_salt).decode("utf-8"),
+        binascii.hexlify(pbkdf2_salt).decode("utf-8"),  # sep: str | bytes
         binascii.hexlify(pw_hash).decode("utf-8"),
     )
 
@@ -35,10 +35,10 @@ def validate_hashed_password(password: str, hashed_password: str) -> bool:
     pbkdf2_salt_hex, pw_hash_hex = hashed_password.split(":")
 
     pw_challenge = hashlib.pbkdf2_hmac(
-        _PBKDF2_HASH_NAME,
-        password.encode("utf-8"),
-        binascii.unhexlify(pbkdf2_salt_hex),
-        _PBKDF2_ITERATIONS,
+        _PBKDF2_HASH_NAME,  #hash_name
+        password.encode("utf-8"),  #password
+        binascii.unhexlify(pbkdf2_salt_hex),  #salt
+        _PBKDF2_ITERATIONS,  # iterations
     )
 
     return pw_challenge == binascii.unhexlify(pw_hash_hex)
@@ -59,6 +59,7 @@ def validate_access_token(access_token: str) -> int:
             message="jwt expired please try reauthenticate"
         )
     except jwt.InvalidIssuerError:
+        # 여기 토큰이 아닌 경우
         raise AuthUtilError(
             code="jwt_invalid_issuer",
             message="jwt token is not issued from this service"
@@ -78,12 +79,10 @@ def validate_access_token(access_token: str) -> int:
     
     return user_id
 
+# TODO: def 만들기! parameter (user_id, role: int)
+# user_id로 찾은 유저의 role과 함수 파라미터로 받은 role의 값을 비교 -> user_id의 role < 파라미터로 받은 role : 에러 발생 (에러만 내기!)
+
 def resolve_access_token(
     credentials: HTTPAuthorizationCredentials = Depends(user_auth_scheme)
 ) -> int:
     return validate_access_token(credentials.credentials)
-
-# TODO: para: user_id , role
-# user_id 로 찾은 유저가 함수 파라미터로 받은 값보다 작으면 에러를 내라
-# 에러만 냄
-# def 
