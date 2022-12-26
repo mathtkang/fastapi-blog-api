@@ -1,10 +1,12 @@
-import hashlib
-import os
-import binascii
-import jwt
+import hashlib, os, binascii, jwt
 import dataclasses
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+from db.db import get_session
+from db import models as m
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import expression as sql_exp
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 _PBKDF2_HASH_NAME = "SHA256"
 _PBKDF2_ITERATIONS = 100_000
@@ -79,10 +81,24 @@ def validate_access_token(access_token: str) -> int:
     
     return user_id
 
-# TODO: def 만들기! parameter (user_id, role: int)
-# user_id로 찾은 유저의 role과 함수 파라미터로 받은 role의 값을 비교 -> user_id의 role < 파라미터로 받은 role : 에러 발생 (에러만 내기!)
-
 def resolve_access_token(
     credentials: HTTPAuthorizationCredentials = Depends(user_auth_scheme)
 ) -> int:
     return validate_access_token(credentials.credentials)
+
+
+# TODO: def 만들기! parameter (user_id, role: int)
+# user_id로 찾은 유저의 role과 함수 파라미터로 받은 role의 값을 비교 -> user_id의 role < 파라미터로 받은 role : 에러 발생 (에러만 내기!)
+
+def validate_user_role(user_id: int, role: m.UserRoleEnum, session: Session):
+    user: m.User | None = session.execute(
+        sql_exp.select(m.User).where(m.User.id == user_id)
+    ).scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="user not found")
+
+    if user.role < role:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN, detail=""
+        )
