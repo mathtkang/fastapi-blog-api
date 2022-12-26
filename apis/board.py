@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, APIRouter
 from db.db import get_session
-from utils.auth import resolve_access_token
+from utils.auth import resolve_access_token, validate_user_role
 from sqlalchemy.orm import Session
 import db.models as m
 from sqlalchemy.sql import expression as sql_exp
@@ -46,21 +46,23 @@ def read_board(session: Session = Depends(get_session)):
 
 @router.post("/")
 def create_board(
-    q: PostBoardRequest, 
-    session: Session = Depends(get_session), 
+    q: PostBoardRequest,
+    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    user: m.User | None = session.execute(
-        sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
-    if user is None :
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="user not found")
+    # user: m.User | None = session.execute(
+    #     sql_exp.select(m.User).where(m.User.id == user_id)
+    # ).scalar_one_or_none()
+    # if user is None :
+    #     raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="user not found")
 
-    if user.role < m.UserRoleEnum.Admin:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, 
-            detail="this user has not permission to create board"
-        )
+    # if user.role < m.UserRoleEnum.Admin:
+    #     raise HTTPException(
+    #         status_code=HTTP_403_FORBIDDEN,
+    #         detail="this user has not permission to create board"
+    #     )
+
+    validate_user_role(user_id, m.UserRoleEnum.Admin, session)
 
     board = m.Board(
         name=q.name,
@@ -72,9 +74,12 @@ def create_board(
 
 @router.put("/{board_id:int}")
 def update_board(
-    board_id: int, q: PostBoardRequest, session: Session = Depends(get_session)
+    board_id: int,
+    q: PostBoardRequest,
+    session: Session = Depends(get_session),
+    user_id: int = Depends(resolve_access_token),
 ):
-
+    validate_user_role(user_id, m.UserRoleEnum.Admin, session)
 
     board: m.Board | None = session.execute(
         sql_exp.select(m.Board).where(m.Board.id == board_id)
@@ -90,7 +95,13 @@ def update_board(
 
 
 @router.delete("/{board_id:int}")
-def delete_board(board_id: int, session: Session = Depends(get_session)):
+def delete_board(
+    board_id: int,
+    session: Session = Depends(get_session),
+    user_id: int = Depends(resolve_access_token),
+):
+    validate_user_role(user_id, m.UserRoleEnum.Admin, session)
+
     board: m.Board | None = session.execute(
         sql_exp.select(m.Board).where(m.Board.id == board_id)
     ).scalar_one_or_none()
