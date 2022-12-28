@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, APIRouter
 from db.db import get_session
-from utils.auth import resolve_access_token, validate_user_role
+from utils.auth import resolve_access_token
 from sqlalchemy.orm import Session
 import db.models as m
 from sqlalchemy.sql import expression as sql_exp
@@ -26,7 +26,9 @@ class GetPostResponse(BaseModel):
 
 
 @router.get("/")
-def read_post(session: Session = Depends(get_session)):
+def read_post(
+    session: Session = Depends(get_session)
+):
     posts: list[m.Post] = session.execute(sql_exp.select(m.Post)).scalars().all()
 
     return [GetPostResponse.from_orm(post) for post in posts]
