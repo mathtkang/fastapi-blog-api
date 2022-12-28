@@ -25,10 +25,6 @@ class GetBoardResponse(BaseModel):
     """
 
 
-class PostBoardRequest(BaseModel):
-    name: str
-
-
 @router.get("/")
 def read_board(session: Session = Depends(get_session)):
     boards: list[m.Board] = session.execute(sql_exp.select(m.Board)).scalars().all()
@@ -44,24 +40,16 @@ def read_board(session: Session = Depends(get_session)):
     ]
 
 
+class PostBoardRequest(BaseModel):
+    name: str
+
+
 @router.post("/")
 def create_board(
     q: PostBoardRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    # user: m.User | None = session.execute(
-    #     sql_exp.select(m.User).where(m.User.id == user_id)
-    # ).scalar_one_or_none()
-    # if user is None :
-    #     raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="user not found")
-
-    # if user.role < m.UserRoleEnum.Admin:
-    #     raise HTTPException(
-    #         status_code=HTTP_403_FORBIDDEN,
-    #         detail="this user has not permission to create board"
-    #     )
-
     validate_user_role(user_id, m.UserRoleEnum.Admin, session)
 
     board = m.Board(

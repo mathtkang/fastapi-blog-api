@@ -87,9 +87,6 @@ def resolve_access_token(
     return validate_access_token(credentials.credentials)
 
 
-# TODO: def 만들기! parameter (user_id, role: int)
-# user_id로 찾은 유저의 role과 함수 파라미터로 받은 role의 값을 비교 -> user_id의 role < 파라미터로 받은 role : 에러 발생 (에러만 내기!)
-
 def validate_user_role(user_id: int, role: m.UserRoleEnum, session: Session):
     user: m.User | None = session.execute(
         sql_exp.select(m.User).where(m.User.id == user_id)

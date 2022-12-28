@@ -101,7 +101,7 @@ class Comment(Base):
     __tablename__ = "comment"
 
     id = Column(Integer, primary_key=True)
-    content = Column(Text, nullable=True)
+    content = Column(Text, nullable=True, default=None)
     user_id = Column(Integer, ForeignKey("user.id"), index=True)
     post_id = Column(Integer, ForeignKey("post.id"), index=True)
     parent_comment_id = Column(Integer, ForeignKey("comment.id"), index=True)

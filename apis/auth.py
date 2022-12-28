@@ -56,3 +56,8 @@ def login(q: AuthSignupRequest, session: Session = Depends(get_session)):
     )
 
     return LoginResponse(access_token=access_token)
+
+
+# @router.post("/logout", )
+# def logout():
+#     pass
