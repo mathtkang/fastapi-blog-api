@@ -4,7 +4,7 @@ from utils.auth import resolve_access_token, validate_user_role
 from sqlalchemy.orm import Session
 import db.models as m
 from sqlalchemy.sql import expression as sql_exp
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 
@@ -14,12 +14,12 @@ router = APIRouter(prefix="/posts/{post_id:int}/comments", tags=["comments"])
 
 class GetCommentResponse(BaseModel):
     id: int
-    content: str | None = None
+    content: str | None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     user_id: int
     post_id: int
-    # parent_comment_id: int
+    parent_comment_id: int | None
 
     class Config:
         orm_mode = True
@@ -30,13 +30,14 @@ def read_comment(
     session: Session = Depends(get_session),
 ):
     comments: list[m.Comment] = session.execute(sql_exp.select(m.Comment)).scalars().all()
-    # parent_id 가 null이면? not null 이면? 에 따라서 반환하는 값이 달라져야하는가?
     
     return [GetCommentResponse.from_orm(comment) for comment in comments]
 
 class PostCommentRequest(BaseModel):
-    content: str | None = None
-    # parent_comment_id: int | None = None
+    content: str | None
+    parent_comment_id: int | None = Field(
+        default=None
+    )
 
 @router.post("/")
 def create_comment(
@@ -49,7 +50,7 @@ def create_comment(
         post_id=post_id,
         user_id=user_id,
         content=q.content,
-        # parent_comment_id=q.parent_comment_id
+        parent_comment_id=q.parent_comment_id
     )
 
     session.add(comment)
@@ -64,8 +65,6 @@ def update_comment(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    # post_id는 언제 사용,,? 사용할 필요가 없음! 이미 comment가 생성될때 post_id는 종속이 됨
-
     comment: m.Comment | None = session.execute(
         sql_exp.select(m.Comment).where(
             (m.Comment.id == comment_id) 
