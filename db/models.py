@@ -141,29 +141,31 @@ class Comment(Base):
     )
 
 
-# class Hashtag(Base):
-#     __tablename__ = "hashtag"
+class Hashtag(Base):
+    __tablename__ = "hashtag"
 
-#     name = Column(String, primary_key=True)
-#     created_at = Column(
-#         TIMESTAMP(timezone=True),
-#         server_default=sql_text("CURRENT_TIMESTAMP"),
-#         nullable=False,
-#     )
-#     updated_at = Column(
-#         TIMESTAMP(timezone=True),
-#         nullable=False,
-#         server_default=sql_text("CURRENT_TIMESTAMP"),
-#         server_onupdate=FetchedValue()
-#     )
+    name = Column(String, primary_key=True)
+    # TODO: relationship
+    count = Column(Integer, nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True),
+        server_default=sql_text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=sql_text("CURRENT_TIMESTAMP"),
+        server_onupdate=FetchedValue()
+    )
 
 
-# class PostHashTag(Base):
-#     """connect Post & Tag"""
-#     __tablename__ = "hashtag"
+class PostHashTag(Base):
+    """connect Post & Hashtag"""
+    __tablename__ = "connect_post_hashtag"
 
-#     post_id = Column(Integer, ForeignKey("post.id"), index=True)
-#     hashtag_name = Column(Integer, ForeignKey("hashtag.name"), index=True)
+    post_id = Column(Integer, ForeignKey("post.id"), index=True)
+    hashtag_name = Column(Integer, ForeignKey("hashtag.name"), index=True)
 
 
 # class Attachment(Base):
