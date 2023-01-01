@@ -95,6 +95,7 @@ class User(Base):
         server_onupdate=FetchedValue(),
     )
     role = Column(Integer, nullable=False, default=UserRoleEnum.User)
+    profile_file_key = Column(String(255), nullable=True)
     posts = relationship(
         "Post", uselist=True, back_populates="written_user", cascade="all"
     )
@@ -145,8 +146,7 @@ class Hashtag(Base):
     __tablename__ = "hashtag"
 
     name = Column(String, primary_key=True)
-    # TODO: relationship
-    count = Column(Integer, nullable=False)
+    # count = Column(Integer, nullable=False)
     created_at = Column(
         TIMESTAMP(timezone=True),
         server_default=sql_text("CURRENT_TIMESTAMP"),
@@ -161,11 +161,12 @@ class Hashtag(Base):
 
 
 class PostHashTag(Base):
-    """connect Post & Hashtag"""
     __tablename__ = "connect_post_hashtag"
 
-    post_id = Column(Integer, ForeignKey("post.id"), index=True)
-    hashtag_name = Column(Integer, ForeignKey("hashtag.name"), index=True)
+    post_id = Column(Integer, ForeignKey("post.id"), primary_key=True)
+    post = relationship("Post", uselist=False)
+    hashtag_name = Column(String, ForeignKey("hashtag.name"), primary_key=True)
+    hashtag = relationship("Hashtag", uselist=False)
 
 
 # class Attachment(Base):
