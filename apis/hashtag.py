@@ -11,7 +11,7 @@ do update -> upsert (update+insert)
 2. 해시태그 리스트의 값이 기존에 존재하는지 확인 후 upsert
     ➡️ 기존 hashtag 테이블에 존재하지 않는 해시태그라면 hashtag와 connect_post_hashtag 테이블 모두 추가
     ➡️ 기존에 존재하는 해시태그라면, connect_post_hashtag 테이블에만 추가
-3. hashtag 테이블의 count 필드 값을 1 증가시킨다.
+3. hashtag 테이블의 count 필드 값을 1 증가시킨다. -> 쿼리로 구해야함!
 4. 태그 기반 검색 기능을 위해, 게시글이 삭제되면 connect_post_hashtag 테이블 안의 데이터도 함께 삭제
 '''
 
@@ -27,7 +27,7 @@ from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD
 import jwt, time
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/hashtag", tags=["hashtag"])
 
 
 # 해시태그 리스트 만들기 (in post)
