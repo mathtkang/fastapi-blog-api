@@ -97,5 +97,6 @@ def validate_user_role(user_id: int, role: m.UserRoleEnum, session: Session):
 
     if user.role < role:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail=""
+            status_code=HTTP_403_FORBIDDEN,
+            detail="You are not authorized to access. Please upgrade your role.",
         )
