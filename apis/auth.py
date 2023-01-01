@@ -22,7 +22,14 @@ def signup(q: AuthSignupRequest, session: Session = Depends(get_session)):
     """
     This is the endpoint for the login page.
     """
+    if session.scalar(sql_exp.exists().where(m.User.email == q.email).select()):
+        raise HTTPException(
+            status_code=HTTP_409_CONFLICT, 
+            detail="Email already exists"
+        )
+
     user = m.User(email=q.email, password=generate_hashed_password(q.password))
+    
     session.add(user)
     session.commit()
 
@@ -58,6 +65,8 @@ def login(q: AuthSignupRequest, session: Session = Depends(get_session)):
     return LoginResponse(access_token=access_token)
 
 
-# @router.post("/logout", )
+# @router.post("/logout")
 # def logout():
-#     pass
+#     '''
+#     You cannot make a logout router. Because session information is not stored,
+#     '''
