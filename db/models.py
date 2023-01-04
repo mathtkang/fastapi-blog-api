@@ -1,11 +1,10 @@
+import enum
+import datetime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, TIMESTAMP
 from sqlalchemy import text as sql_text
-from sqlalchemy.orm import sessionmaker
-import datetime
 from sqlalchemy.schema import FetchedValue
-import enum
-from sqlalchemy.orm import column_property, ColumnProperty, relationship, backref
+from sqlalchemy.orm import sessionmaker, column_property, ColumnProperty, relationship, backref
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy.sql import func as sa_func
 
@@ -146,7 +145,6 @@ class Hashtag(Base):
     __tablename__ = "hashtag"
 
     name = Column(String, primary_key=True)
-    # count = Column(Integer, nullable=False)
     created_at = Column(
         TIMESTAMP(timezone=True),
         server_default=sql_text("CURRENT_TIMESTAMP"),
