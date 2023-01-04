@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 1dcc82b4678d
+Revision ID: c99f2000593d
 Revises: 
-Create Date: 2022-12-31 09:51:24.768489
+Create Date: 2023-01-04 16:56:11.976410
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '1dcc82b4678d'
+revision = 'c99f2000593d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,7 +27,6 @@ def upgrade() -> None:
     )
     op.create_table('hashtag',
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('count', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('name')
@@ -39,6 +38,7 @@ def upgrade() -> None:
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('role', sa.Integer(), nullable=False),
+    sa.Column('profile_file_key', sa.String(length=255), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('post',
