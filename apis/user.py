@@ -136,7 +136,7 @@ def change_password(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    # 엑세스토큰을 갖고 있는 상태에서, 기존 비밀번호(확인 후)와 새로운 비밀번호를 받아서 변경
+    # DONE: 엑세스토큰을 갖고 있는 상태에서, 기존 비밀번호(확인 후)와 새로운 비밀번호를 받아서 변경
     user: m.User | None = session.execute(
         sql_exp.select(m.User).where(m.User.id == user_id)
     ).scalar_one_or_none()
@@ -151,3 +151,17 @@ def change_password(
     session.add(user)
     session.commit()
 
+
+
+# TODO: likes (SQL로 쿼리문 어떻게 짜야할지 생각!)
+@router.get("/likes")
+def get_liked_post(
+    session: Session = Depends(get_session),
+    user_id: int = Depends(resolve_access_token),
+):
+    user: m.User | None = session.execute(
+        sql_exp.select(m.User).where(m.User.id == user_id)
+    ).scalar_one_or_none()
+
+
+    return
