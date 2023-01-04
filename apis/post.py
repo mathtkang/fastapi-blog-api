@@ -29,10 +29,22 @@ class GetPostResponse(BaseModel):
 @router.get("/")
 def read_post(
     session: Session = Depends(get_session),
-    # user_id: int = Depends(resolve_access_token) | None
+    user_id: int = Depends(resolve_access_token) | None  # optional
 ):
+    # TODO: 유저가 작성한 게시글 조회
+    if user_id is not None:  # user_id가 있을 때
+        written_post: m.Post = session.execute(
+            sql_exp.select(m.Post).where(m.Post.written_user_id == user_id)
+        ).scalar_one_or_none()
+        
+        if written_post is None:
+            raise HTTPException(
+                status_code=HTTP_404_NOT_FOUND,
+                detail=f"Post {user_id} not found",
+            )
+        return GetPostResponse.from_orm(written_post)
+        
     posts: list[m.Post] = session.execute(sql_exp.select(m.Post)).scalars().all()
-    
     return [GetPostResponse.from_orm(post) for post in posts]  # upgrade할 예정
 
 
