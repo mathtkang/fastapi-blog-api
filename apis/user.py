@@ -1,4 +1,4 @@
-from fastapi import Depends, APIRouter, HTTPException, UploadFile
+from fastapi import Depends, APIRouter, HTTPException, UploadFile, Response
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from db.db import get_session
@@ -11,8 +11,8 @@ from utils.auth import generate_hashed_password, validate_hashed_password
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 import datetime
 import jwt, time
-from utils.blob import get_blob_client
 from mypy_boto3_s3.client import S3Client
+from utils.blob import get_blob_client
 from utils.misc import get_random_string
 
 
@@ -32,7 +32,7 @@ class GetUserInformationResponse(BaseModel):
 
 
 
-@router.get("/")
+@router.get("")
 def get_all_users(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
@@ -63,12 +63,14 @@ def get_my_information(
     return GetUserInformationResponse.from_orm(user)
 
 
-@router.post("/me")
+@router.post("/file")
 # TODO: URL 생성 (다운로드받기)
+def download_file():
+    pass
 
 
-@router.put("/me")
-def update_my_profile(
+@router.put("/file")
+def upload_file(
     file: UploadFile,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
@@ -149,9 +151,3 @@ def change_password(
     session.add(user)
     session.commit()
 
-
-
-
-@router.get("/likes")
-def get_liked_post():
-    pass
