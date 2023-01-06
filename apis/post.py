@@ -77,6 +77,7 @@ def search_post(
     session: Session = Depends(get_session),
 ):
     post_query = sql_exp.select(m.Post)
+
     if q.like_user_id is not None:
         post_query = post_query.join(m.Post.likes).where(
             m.Like.user_id == q.like_user_id
@@ -90,7 +91,7 @@ def search_post(
         sql_exp.select(sql_func.count()).select_from(post_query)
     )
 
-    # how1) sort
+    # sorting way1) dictionary
     sort_by_column = {
         "created_at": m.Post.created_at,
         "updated_at": m.Post.updated_at,
@@ -104,23 +105,18 @@ def search_post(
 
     post_query = post_query.order_by(sort_exp)
 
-    # how2) sort
+    # sorting way2) getattr() method
     post_query = post_query.order_by(
         getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
     )
     if q.sort_direction is "asc":
-        post_query = post_query.order_by(
-            getattr(m.Post, q.sort_by).asc()
-        )
+        post_query = post_query.order_by(getattr(m.Post, q.sort_by).asc())
     else:
-        post_query = post_query.order_by(
-            getattr(m.Post, q.sort_by).desc()
-        )
-    
+        post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
+
     post_query = post_query.offset(q.offset).limit(q.count)
-    
     posts = session.scalars(post_query).all()
-    
+
     return SearchPostResponse(
         posts=[GetPostResponse.from_orm(post) for post in posts],
         count=post_cnt,
