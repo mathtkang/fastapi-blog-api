@@ -74,6 +74,7 @@ class Post(Base):
     comments = relationship(
         "Comment", uselist=True, back_populates="post", cascade="all"
     )
+    # hashtags = relationship("Hasttag", uselist=False, back_populates="post", cascade="all")
 
 
 class User(Base):
