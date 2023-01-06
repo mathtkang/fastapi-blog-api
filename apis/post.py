@@ -8,6 +8,8 @@ from pydantic import BaseModel
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 import re
+from typing import Literal
+from sqlalchemy.sql import func as sql_func
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -29,23 +31,100 @@ class GetPostResponse(BaseModel):
 @router.get("/")
 def read_post(
     session: Session = Depends(get_session),
-    user_id: int = Depends(resolve_access_token) | None  # optional
 ):
-    # TODO: 유저가 작성한 게시글 조회
-    if user_id is not None:  # user_id가 있을 때
-        written_post: m.Post = session.execute(
-            sql_exp.select(m.Post).where(m.Post.written_user_id == user_id)
-        ).scalar_one_or_none()
-        
-        if written_post is None:
-            raise HTTPException(
-                status_code=HTTP_404_NOT_FOUND,
-                detail=f"Post {user_id} not found",
-            )
-        return GetPostResponse.from_orm(written_post)
-    
     posts: list[m.Post] = session.execute(sql_exp.select(m.Post)).scalars().all()
-    return [GetPostResponse.from_orm(post) for post in posts]  # upgrade할 예정
+    return [GetPostResponse.from_orm(post) for post in posts]
+
+
+@router.get("/{post_id}")
+def get_post(
+    post_id: int,
+    session: Session = Depends(get_session),
+):
+    post: m.Post = session.execute(
+        sql_exp.select(m.Post).where(m.Post.id == post_id)
+    ).scalar_one_or_none()
+
+    if post is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+
+    return GetPostResponse.from_orm(post)
+
+
+class SearchPostRequest(BaseModel):
+    # filter
+    like_user_id: int | None
+    written_user_id: int | None
+    board_id: int | None
+    # sort
+    sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
+        "written_user_id"
+    ] = "created_at"
+    sort_direction: Literal["asc"] | Literal["desc"] = "asc"
+    # pagination
+    offset: int = 0
+    count: int = 20
+
+
+class SearchPostResponse(BaseModel):
+    posts: list[GetPostResponse]
+    count: int
+
+
+@router.post("/search")
+def search_post(
+    q: SearchPostRequest,
+    session: Session = Depends(get_session),
+):
+    post_query = sql_exp.select(m.Post)
+    if q.like_user_id is not None:
+        post_query = post_query.join(m.Post.likes).where(
+            m.Like.user_id == q.like_user_id
+        )
+    if q.written_user_id is not None:
+        post_query = post_query.where(m.Post.written_user_id == q.written_user_id)
+    if q.board_id is not None:
+        post_query = post_query.where(m.Post.board_id == q.board_id)
+
+    post_cnt: int = session.scalar(
+        sql_exp.select(sql_func.count()).select_from(post_query)
+    )
+
+    # how1) sort
+    sort_by_column = {
+        "created_at": m.Post.created_at,
+        "updated_at": m.Post.updated_at,
+        "written_user_id": m.Post.written_user_id,
+    }[q.sort_by]
+
+    sort_exp = {
+        "asc": sort_by_column.asc(),
+        "desc": sort_by_column.desc(),
+    }[q.sort_direction]
+
+    post_query = post_query.order_by(sort_exp)
+
+    # how2) sort
+    post_query = post_query.order_by(
+        getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
+    )
+    if q.sort_direction is "asc":
+        post_query = post_query.order_by(
+            getattr(m.Post, q.sort_by).asc()
+        )
+    else:
+        post_query = post_query.order_by(
+            getattr(m.Post, q.sort_by).desc()
+        )
+    
+    post_query = post_query.offset(q.offset).limit(q.count)
+    
+    posts = session.scalars(post_query).all()
+    
+    return SearchPostResponse(
+        posts=[GetPostResponse.from_orm(post) for post in posts],
+        count=post_cnt,
+    )
 
 
 class PostPostRequest(BaseModel):
@@ -53,8 +132,10 @@ class PostPostRequest(BaseModel):
     content: str
     board_id: int
 
+
 class PostHashtagRequest(BaseModel):
     name: str
+
 
 @router.post("/")
 def create_post(
@@ -72,12 +153,14 @@ def create_post(
     session.add(post)
     session.commit()
 
-    # TODO: hashtag 리스트로 전달 -> test 완료
-    content=q.content
-    pattern = '#([0-9a-zA-Z가-힣]*)'
+    # DONE: hashtag 리스트로 전달 -> test 완료
+    content = q.content
+    pattern = "#([0-9a-zA-Z가-힣]*)"
     new_hashtags = re.compile(pattern).findall(content)  # type:list
 
-    exist_hashtags: list[m.Hashtag] = session.execute(sql_exp.select(m.Hashtag)).scalars().all()
+    exist_hashtags: list[m.Hashtag] = (
+        session.execute(sql_exp.select(m.Hashtag)).scalars().all()
+    )
 
     # for new_tag in new_hashtags:
     #     for exist_tag in exist_hashtags:
@@ -91,7 +174,7 @@ def create_post(
         hashtag: m.Hashtag = session.execute(
             sql_exp.select(m.Hashtag).where(m.Hashtag.name == new_tag)
         ).scalar_one_or_none()
-        
+
         if hashtag is not None:  # 기존에 같은 태그가 존재하면
             continue
 
