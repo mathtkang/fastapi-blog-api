@@ -29,15 +29,16 @@ class GetBoardResponse(BaseModel):
 def read_board(session: Session = Depends(get_session)):
     boards: list[m.Board] = session.execute(sql_exp.select(m.Board)).scalars().all()
 
-    return [
-        GetBoardResponse(
-            id=board.id,
-            name=board.name,
-            created_at=board.created_at,
-            updated_at=board.updated_at,
-        )
-        for board in boards
-    ]
+    # return [
+    #     GetBoardResponse(
+    #         id=board.id,
+    #         name=board.name,
+    #         created_at=board.created_at,
+    #         updated_at=board.updated_at,
+    #     )
+    #     for board in boards
+    # ]
+    return [GetBoardResponse.from_orm(board) for board in boards]
 
 
 class PostBoardRequest(BaseModel):
