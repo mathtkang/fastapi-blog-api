@@ -24,20 +24,23 @@ class GetCommentResponse(BaseModel):
     class Config:
         orm_mode = True
 
+# TODO: convert to get one comment
 @router.get("/")
 def read_comment(
     post_id: int,
     session: Session = Depends(get_session),
 ):
-    comments: list[m.Comment] = session.execute(sql_exp.select(m.Comment)).scalars().all()
-    
+    comments: list[m.Comment] = (
+        session.execute(sql_exp.select(m.Comment)).scalars().all()
+    )
+
     return [GetCommentResponse.from_orm(comment) for comment in comments]
+
 
 class PostCommentRequest(BaseModel):
     content: str | None
-    parent_comment_id: int | None = Field(
-        default=None
-    )
+    parent_comment_id: int | None = Field(default=None)
+
 
 @router.post("/")
 def create_comment(
@@ -50,7 +53,7 @@ def create_comment(
         post_id=post_id,
         user_id=user_id,
         content=q.content,
-        parent_comment_id=q.parent_comment_id
+        parent_comment_id=q.parent_comment_id,
     )
 
     session.add(comment)
@@ -67,7 +70,7 @@ def update_comment(
 ):
     comment: m.Comment | None = session.execute(
         sql_exp.select(m.Comment).where(
-            (m.Comment.id == comment_id) 
+            (m.Comment.id == comment_id)
             # & (m.Comment.user_id == user_id)
         )
     ).scalar_one_or_none()
@@ -79,11 +82,12 @@ def update_comment(
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
         )
-    
+
     comment.content = q.content
 
     session.add(comment)
     session.commit()
+
 
 @router.delete("/{comment_id:int}")
 def delete_comment(
@@ -94,7 +98,7 @@ def delete_comment(
 ):
     comment: m.Comment | None = session.execute(
         sql_exp.select(m.Comment).where(
-            (m.Comment.id == comment_id) 
+            (m.Comment.id == comment_id)
             # & (m.Comment.user_id == user_id)
         )
     ).scalar_one_or_none()
@@ -106,6 +110,6 @@ def delete_comment(
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
         )
-    
+
     session.delete(comment)
     session.commit()
