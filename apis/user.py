@@ -8,7 +8,12 @@ from pydantic import BaseModel
 from db import models as m
 from sqlalchemy.sql import expression as sql_exp
 from utils.auth import generate_hashed_password, validate_hashed_password
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
+from starlette.status import (
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+)
 import datetime
 import jwt, time
 from mypy_boto3_s3.client import S3Client
@@ -30,8 +35,6 @@ class GetUserInformationResponse(BaseModel):
         orm_mode = True
 
 
-
-
 @router.get("")
 def get_all_users(
     session: Session = Depends(get_session),
@@ -42,7 +45,6 @@ def get_all_users(
     users: list[m.User] = session.execute(sql_exp.select(m.User)).scalars().all()
 
     return [GetUserInformationResponse.from_orm(user) for user in users]
-
 
 
 @router.get("/me")
@@ -59,7 +61,7 @@ def get_my_information(
             status_code=HTTP_403_FORBIDDEN,
             detail="User not found",
         )
-    
+
     return GetUserInformationResponse.from_orm(user)
 
 
@@ -76,13 +78,13 @@ def upload_file(
     user_id: int = Depends(resolve_access_token),
     blob_client: S3Client = Depends(get_blob_client),
 ):
-    '''
+    """
     파일스토리지
     1. session
     2. resolve access token (user_id)
     3. blob client
     4. 사용자의 입력(file)
-    '''
+    """
     user: m.User | None = session.execute(
         sql_exp.select(m.User).where(m.User.id == user_id)
     ).scalar_one_or_none()
@@ -107,6 +109,7 @@ class PostRoleRequest(BaseModel):
     role: int
     user_id: int
 
+
 @router.put("/role")
 def change_user_role(
     q: PostRoleRequest,
@@ -118,17 +121,17 @@ def change_user_role(
     user: m.User | None = session.execute(
         sql_exp.select(m.User).where(m.User.id == q.user_id)
     ).scalar_one_or_none()
-    
+
     user.role = q.role
 
     session.add(user)
     session.commit()
 
 
-
 class PostPasswordRequest(BaseModel):
     old_password: str
     new_password: str
+
 
 @router.put("/change-password")
 def change_password(
@@ -150,18 +153,3 @@ def change_password(
 
     session.add(user)
     session.commit()
-
-
-
-# TODO: likes (SQL로 쿼리문 어떻게 짜야할지 생각!)
-@router.get("/likes")
-def get_liked_post(
-    session: Session = Depends(get_session),
-    user_id: int = Depends(resolve_access_token),
-):
-    user: m.User | None = session.execute(
-        sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
-
-
-    return

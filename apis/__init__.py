@@ -13,5 +13,5 @@ API_ROUTERS = [
     post_router,
     comment_router,
     hashtag_router,
-    attachment_router
+    attachment_router,
 ]
