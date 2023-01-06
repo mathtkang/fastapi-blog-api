@@ -29,7 +29,7 @@ class GetPostResponse(BaseModel):
 
 
 @router.get("/")
-def read_post(
+def get_all_posts(
     session: Session = Depends(get_session),
 ):
     posts: list[m.Post] = session.execute(sql_exp.select(m.Post)).scalars().all()
@@ -52,7 +52,7 @@ def get_post(
 
 
 class SearchPostRequest(BaseModel):
-    # filter
+    # filter (query parameters)
     like_user_id: int | None
     written_user_id: int | None
     board_id: int | None
@@ -90,6 +90,9 @@ def search_post(
     post_cnt: int = session.scalar(
         sql_exp.select(sql_func.count()).select_from(post_query)
     )
+    # post_cnt: int = session.execute(
+    #     sql_exp.select(sql_func.count()).select_from(post_query)
+    # ).scalar_one_or_none()
 
     # sorting way1) dictionary
     sort_by_column = {
@@ -106,16 +109,17 @@ def search_post(
     post_query = post_query.order_by(sort_exp)
 
     # sorting way2) getattr() method
-    post_query = post_query.order_by(
-        getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
-    )
-    if q.sort_direction is "asc":
-        post_query = post_query.order_by(getattr(m.Post, q.sort_by).asc())
-    else:
-        post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
+    # post_query = post_query.order_by(
+    #     getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
+    # )
+    # if q.sort_direction is "asc":
+    #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).asc())
+    # else:
+    #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
 
     post_query = post_query.offset(q.offset).limit(q.count)
     posts = session.scalars(post_query).all()
+    # posts = session.execute(post_query).scalars().all()
 
     return SearchPostResponse(
         posts=[GetPostResponse.from_orm(post) for post in posts],
