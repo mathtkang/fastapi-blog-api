@@ -1,5 +1,4 @@
-from fastapi import Depends, APIRouter, HTTPException, UploadFile, Response
-from fastapi.responses import JSONResponse
+from fastapi import Depends, APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from db.db import get_session
 from utils.auth import resolve_access_token, validate_user_role
@@ -15,21 +14,20 @@ from starlette.status import (
     HTTP_403_FORBIDDEN,
 )
 import datetime
-import jwt, time
 from mypy_boto3_s3.client import S3Client
 from utils.blob import get_blob_client
-from utils.misc import get_random_string
 
 
 router = APIRouter(prefix="/user", tags=["user"])
 
 
-class GetUserInformationResponse(BaseModel):
+class GetUserResponse(BaseModel):
     id: int
     email: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
     role: int
+    profile_file_url: str | None
 
     class Config:
         orm_mode = True
@@ -44,47 +42,15 @@ def get_all_users(
 
     users: list[m.User] = session.execute(sql_exp.select(m.User)).scalars().all()
 
-    return [GetUserInformationResponse.from_orm(user) for user in users]
+    return [GetUserResponse.from_orm(user) for user in users]
 
 
 @router.get("/me")
-def get_my_information(
-    session: Session = Depends(get_session),
-    user_id: int = Depends(resolve_access_token),
-):
-    user: m.User | None = session.execute(
-        sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
-
-    if user is None:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="User not found",
-        )
-
-    return GetUserInformationResponse.from_orm(user)
-
-
-@router.post("/file")
-# TODO: URL 생성 (다운로드받기)
-def download_file():
-    pass
-
-
-@router.put("/file")
-def upload_file(
-    file: UploadFile,
+def get_me(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
     blob_client: S3Client = Depends(get_blob_client),
 ):
-    """
-    파일스토리지
-    1. session
-    2. resolve access token (user_id)
-    3. blob client
-    4. 사용자의 입력(file)
-    """
     user: m.User | None = session.execute(
         sql_exp.select(m.User).where(m.User.id == user_id)
     ).scalar_one_or_none()
@@ -94,12 +60,41 @@ def upload_file(
             status_code=HTTP_403_FORBIDDEN,
             detail="User not found",
         )
-    random_string = get_random_string(4)
-    profile_file_key = f"profile_{user_id}_{random_string}"
 
-    blob_client.upload_fileobj(file.file, "fastapi-practice", profile_file_key)
+    if user.profile_file_key is not None:
+        user.profile_file_url = blob_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": "fastapi-practice",
+                "Key": user.profile_file_key,
+            },
+            ExpiresIn=60 * 60 * 24,
+        )
 
-    user.profile_file_key = profile_file_key
+    return GetUserResponse.from_orm(user)
+
+
+class PutUserRequest(BaseModel):
+    profile_file_key: str | None
+
+
+@router.put("/me")
+def update_me(
+    q: PutUserRequest,
+    session: Session = Depends(get_session),
+    user_id: int = Depends(resolve_access_token),
+):
+    user: m.User | None = session.execute(
+        sql_exp.select(m.User).where(m.User.id == user_id)
+    ).scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="User not found",
+        )
+
+    user.profile_file_key = q.profile_file_key
 
     session.add(user)
     session.commit()
@@ -139,7 +134,6 @@ def change_password(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    # DONE: 엑세스토큰을 갖고 있는 상태에서, 기존 비밀번호(확인 후)와 새로운 비밀번호를 받아서 변경
     user: m.User | None = session.execute(
         sql_exp.select(m.User).where(m.User.id == user_id)
     ).scalar_one_or_none()
