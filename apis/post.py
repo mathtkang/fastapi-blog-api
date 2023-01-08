@@ -10,6 +10,7 @@ from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 import re
 from typing import Literal
 from sqlalchemy.sql import func as sql_func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -26,14 +27,6 @@ class GetPostResponse(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-@router.get("/")
-def get_all_posts(
-    session: Session = Depends(get_session),
-):
-    posts: list[m.Post] = session.execute(sql_exp.select(m.Post)).scalars().all()
-    return [GetPostResponse.from_orm(post) for post in posts]
 
 
 @router.get("/{post_id}")
@@ -151,36 +144,18 @@ def create_post(
     )
 
     session.add(post)
-    session.commit()
 
-    # DONE: hashtag 리스트로 전달 -> test 완료
     content = q.content
     pattern = "#([0-9a-zA-Z가-힣]*)"
-    new_hashtags = re.compile(pattern).findall(content)  # type:list
+    hashtags = re.compile(pattern).findall(content)  # type:list
 
-    exist_hashtags: list[m.Hashtag] = (
-        session.execute(sql_exp.select(m.Hashtag)).scalars().all()
+    session.execute(
+        pg_insert(m.Hashtag)
+        .values([{"name": hashtag} for hashtag in hashtags])
+        .on_conflict_do_nothing()
     )
 
-    # for new_tag in new_hashtags:
-    #     for exist_tag in exist_hashtags:
-    #         if new_tag == exist_tag.name:
-    #             continue
-    #         tag = m.Hashtag(name=new_tag)
-    #         session.add(tag)
-    # session.commit()
-
-    for new_tag in new_hashtags:
-        hashtag: m.Hashtag = session.execute(
-            sql_exp.select(m.Hashtag).where(m.Hashtag.name == new_tag)
-        ).scalar_one_or_none()
-
-        if hashtag is not None:  # 기존에 같은 태그가 존재하면
-            continue
-
-        tag = m.Hashtag(name=new_tag)
-        session.add(tag)
-        session.commit()
+    session.commit()
 
 
 @router.put("/{post_id:int}")
