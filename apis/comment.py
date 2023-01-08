@@ -26,17 +26,6 @@ class GetCommentResponse(BaseModel):
         orm_mode = True
 
 
-@router.get("/")
-def get_all_comments(
-    post_id: int,
-    session: Session = Depends(get_session),
-):
-    comments: list[m.Comment] = (
-        session.execute(sql_exp.select(m.Comment)).scalars().all()
-    )
-    return [GetCommentResponse.from_orm(comment) for comment in comments]
-
-
 @router.get("/{comment_id:int}")
 def get_comment(
     comment_id: int,
@@ -71,7 +60,7 @@ class SearchCommentRequest(BaseModel):
 
 
 class SearchCommentResponse(BaseModel):
-    comments: list[SearchCommentRequest]
+    comments: list[GetCommentResponse]
     count: int
 
 
@@ -113,7 +102,7 @@ def search_comments(
 
     return SearchCommentResponse(
         comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
-        count=comment_cnt
+        count=comment_cnt,
     )
 
 
@@ -142,7 +131,6 @@ def create_comment(
 
 @router.put("/{comment_id:int}")
 def update_comment(
-    post_id: int,
     comment_id: int,
     q: PostCommentRequest,
     session: Session = Depends(get_session),
@@ -171,7 +159,6 @@ def update_comment(
 
 @router.delete("/{comment_id:int}")
 def delete_comment(
-    post_id: int,
     comment_id: int,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
