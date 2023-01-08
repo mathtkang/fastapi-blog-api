@@ -1,7 +1,7 @@
 """
 [insert or ignore]
 sql: 
-on_confilct do nothing -> insert or ignore
+on confilct do nothing -> insert or ignore
 do update -> upsert (update+insert)
 
 
@@ -27,34 +27,27 @@ from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD
 import datetime
 
 
-router = APIRouter(prefix="/hashtag", tags=["hashtag"])
+# router = APIRouter(prefix="/hashtag", tags=["hashtag"])
 
 
-class GetHashtagResponse(BaseModel):
-    name: str
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+# class GetHashtagResponse(BaseModel):
+#     name: str
+#     created_at: datetime.datetime
+#     updated_at: datetime.datetime
 
-    class Config:
-        orm_mode = True
-
-
-@router.get("/")
-# TODO: 해시태그 전체 조회 -> 완료
-def get_all_hashtag(
-    session: Session = Depends(get_session),
-):
-    hashtags: list[m.Hashtag] = (
-        session.execute(sql_exp.select(m.Hashtag)).scalars().all()
-    )
-    return [GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags]
+#     class Config:
+#         orm_mode = True
 
 
-@router.get("/{hashtag_id:int}")
-def get_hashtag(
-    hashtag_id: int,
-):
-    pass
+# @router.get("/")
+# # TODO: search로 바꾸기
+# def get_all_hashtag(
+#     session: Session = Depends(get_session),
+# ):
+#     hashtags: list[m.Hashtag] = (
+#         session.execute(sql_exp.select(m.Hashtag)).scalars().all()
+#     )
+#     return [GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags]
 
 
 # 특정 해시태그에 대한 데이터(연관된 post) 가져오기
