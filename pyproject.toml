@@ -22,6 +22,7 @@ boto3 = "^1.26.41"
 types-boto3 = "^1.0.2"
 mypy-boto3-s3 = "^1.26.0.post1"
 python-multipart = "^0.0.5"
+asyncio = "^3.4.3"
 
 
 [build-system]
