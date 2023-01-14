@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, APIRouter
 from db.db import get_session
 from utils.auth import resolve_access_token, validate_user_role
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 import db.models as m
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel, Field
@@ -27,13 +27,13 @@ class GetCommentResponse(BaseModel):
 
 
 @router.get("/{comment_id:int}")
-def get_comment(
+async def get_comment(
     comment_id: int,
     session: Session = Depends(get_session),
 ):
-    comment: m.Comment = session.execute(
+    comment: m.Comment = await session.scalar(
         sql_exp.select(m.Comment).where(m.Comment.id == comment_id)
-    ).scalar_one_or_none()
+    )
 
     if comment is None:
         raise HTTPException(
@@ -64,9 +64,8 @@ class SearchCommentResponse(BaseModel):
     count: int
 
 
-# DONE: convert to get one comment
 @router.post("/search")
-def search_comments(
+async def search_comments(
     q: SearchCommentRequest,
     session: Session = Depends(get_session),
 ):
@@ -98,7 +97,7 @@ def search_comments(
     comment_query = comment_query.order_by(sort_exp)
 
     comment_query = comment_query.offset(q.offset).limit(q.count)
-    comments = session.execute(comment_query).scalars().all()
+    comments = (await session.scalars(comment_query)).all()
 
     return SearchCommentResponse(
         comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
@@ -112,7 +111,7 @@ class PostCommentRequest(BaseModel):
 
 
 @router.post("/")
-def create_comment(
+async def create_comment(
     post_id: int,
     q: PostCommentRequest,
     session: Session = Depends(get_session),
@@ -126,22 +125,21 @@ def create_comment(
     )
 
     session.add(comment)
-    session.commit()
+    await session.commit()
 
 
 @router.put("/{comment_id:int}")
-def update_comment(
+async def update_comment(
     comment_id: int,
     q: PostCommentRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    comment: m.Comment | None = session.execute(
+    comment: m.Comment | None = await session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.id == comment_id)
-            # & (m.Comment.user_id == user_id)
         )
-    ).scalar_one_or_none()
+    )
 
     if comment is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="comment not found")
@@ -154,21 +152,20 @@ def update_comment(
     comment.content = q.content
 
     session.add(comment)
-    session.commit()
+    await session.commit()
 
 
 @router.delete("/{comment_id:int}")
-def delete_comment(
+async def delete_comment(
     comment_id: int,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    comment: m.Comment | None = session.execute(
+    comment: m.Comment | None = await session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.id == comment_id)
-            # & (m.Comment.user_id == user_id)
         )
-    ).scalar_one_or_none()
+    )
 
     if comment is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="comment not found")
@@ -178,5 +175,5 @@ def delete_comment(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
         )
 
-    session.delete(comment)
-    session.commit()
+    await session.delete(comment)
+    await session.commit()

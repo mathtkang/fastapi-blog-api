@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, APIRouter
 from db.db import get_session
 from utils.auth import resolve_access_token
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 import db.models as m
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
@@ -30,12 +30,14 @@ class GetPostResponse(BaseModel):
 
 
 @router.get("/{post_id}")
-def get_post(
+async def get_post(
     post_id: int,
     session: Session = Depends(get_session),
 ):
-    post: m.Post = session.execute(
-        sql_exp.select(m.Post).where(m.Post.id == post_id)
+    post: m.Post = (
+        await session.execute(
+            sql_exp.select(m.Post).where(m.Post.id == post_id)
+        )
     ).scalar_one_or_none()
 
     if post is None:
@@ -65,7 +67,7 @@ class SearchPostResponse(BaseModel):
 
 
 @router.post("/search")
-def search_post(
+async def search_post(
     q: SearchPostRequest,
     session: Session = Depends(get_session),
 ):
@@ -80,12 +82,9 @@ def search_post(
     if q.board_id is not None:
         post_query = post_query.where(m.Post.board_id == q.board_id)
 
-    post_cnt: int = session.scalar(
+    post_cnt: int = await session.scalar(
         sql_exp.select(sql_func.count()).select_from(post_query)
     )
-    # post_cnt: int = session.execute(
-    #     sql_exp.select(sql_func.count()).select_from(post_query)
-    # ).scalar_one_or_none()
 
     # sorting way1) dictionary
     sort_by_column = {
@@ -111,8 +110,7 @@ def search_post(
     #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
 
     post_query = post_query.offset(q.offset).limit(q.count)
-    posts = session.scalars(post_query).all()
-    # posts = session.execute(post_query).scalars().all()
+    posts = (await session.scalars(post_query)).all()
 
     return SearchPostResponse(
         posts=[GetPostResponse.from_orm(post) for post in posts],
@@ -131,7 +129,7 @@ class PostHashtagRequest(BaseModel):
 
 
 @router.post("/")
-def create_post(
+async def create_post(
     q: PostPostRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
@@ -149,23 +147,23 @@ def create_post(
     pattern = "#([0-9a-zA-Z가-힣]*)"
     hashtags = re.compile(pattern).findall(content)  # type:list
 
-    session.execute(
+    await session.execute(
         pg_insert(m.Hashtag)
         .values([{"name": hashtag} for hashtag in hashtags])
         .on_conflict_do_nothing()
     )
 
-    session.commit()
+    await session.commit()
 
 
 @router.put("/{post_id:int}")
-def update_post(
+async def update_post(
     post_id: int,
     q: PostPostRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = session.execute(
+    post: m.Post | None = await session.execute(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     ).scalar_one_or_none()
 
@@ -181,18 +179,18 @@ def update_post(
     post.content = q.content
 
     session.add(post)
-    session.commit()
+    await session.commit()
 
 
 @router.delete("/{post_id:int}")
-def delete_post(
+async def delete_post(
     post_id: int,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = session.execute(
+    post: m.Post | None = await session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
-    ).scalar_one_or_none()
+    )
 
     if post is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
@@ -202,28 +200,28 @@ def delete_post(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your post"
         )
 
-    session.delete(post)
-    session.commit()
+    await session.delete(post)
+    await session.commit()
 
 
 @router.post("/{post_id:int}/like")
-def like_post(
+async def like_post(
     post_id: int,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = session.execute(
+    post: m.Post | None = await session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
-    ).scalar_one_or_none()
+    )
 
     if post is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
 
-    like: m.Like | None = session.execute(
+    like: m.Like | None = await session.scalar(
         sql_exp.select(m.Like).where(
             (m.Like.post_id == post_id) & (m.Like.user_id == user_id)
         )
-    ).scalar_one_or_none()
+    )
 
     if like is not None:
         return
@@ -234,30 +232,30 @@ def like_post(
     )
 
     session.add(like)
-    session.commit()
+    await session.commit()
 
 
 @router.delete("/{post_id:int}/like")
-def like_delete(
+async def like_delete(
     post_id: int,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = session.execute(
+    post: m.Post | None = await session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
-    ).scalar_one_or_none()
+    )
 
     if post is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
 
-    like: m.Like | None = session.execute(
+    like: m.Like | None = await session.scalar(
         sql_exp.select(m.Like).where(
             (m.Like.post_id == post_id) & (m.Like.user_id == user_id)
         )
-    ).scalar_one_or_none()
+    )
 
     if like is None:
         return
 
-    session.delete(like)
-    session.commit()
+    await session.delete(like)
+    await session.commit()
