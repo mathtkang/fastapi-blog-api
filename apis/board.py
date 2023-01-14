@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, APIRouter
 from db.db import get_session
 from utils.auth import resolve_access_token, validate_user_role
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 import db.models as m
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
@@ -26,8 +26,8 @@ class GetBoardResponse(BaseModel):
 
 
 @router.get("/")
-def read_board(session: Session = Depends(get_session)):
-    boards: list[m.Board] = session.execute(sql_exp.select(m.Board)).scalars().all()
+async def read_board(session: Session = Depends(get_session)):
+    boards: list[m.Board] = (await session.scalars(sql_exp.select(m.Board))).all()
 
     # return [
     #     GetBoardResponse(
@@ -46,7 +46,7 @@ class PostBoardRequest(BaseModel):
 
 
 @router.post("/")
-def create_board(
+async def create_board(
     q: PostBoardRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
@@ -58,11 +58,11 @@ def create_board(
     )
 
     session.add(board)
-    session.commit()
+    await session.commit()
 
 
 @router.put("/{board_id:int}")
-def update_board(
+async def update_board(
     board_id: int,
     q: PostBoardRequest,
     session: Session = Depends(get_session),
@@ -70,8 +70,10 @@ def update_board(
 ):
     validate_user_role(user_id, m.UserRoleEnum.Admin, session)
 
-    board: m.Board | None = session.execute(
-        sql_exp.select(m.Board).where(m.Board.id == board_id)
+    board: m.Board | None = (
+        await session.execute(
+            sql_exp.select(m.Board).where(m.Board.id == board_id)
+        )
     ).scalar_one_or_none()
 
     if board is None:
@@ -80,23 +82,25 @@ def update_board(
     board.name = q.name
 
     session.add(board)
-    session.commit()
+    await session.commit()
 
 
 @router.delete("/{board_id:int}")
-def delete_board(
+async def delete_board(
     board_id: int,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
     validate_user_role(user_id, m.UserRoleEnum.Admin, session)
 
-    board: m.Board | None = session.execute(
-        sql_exp.select(m.Board).where(m.Board.id == board_id)
+    board: m.Board | None = (
+        await session.execute(
+            sql_exp.select(m.Board).where(m.Board.id == board_id)
+        )
     ).scalar_one_or_none()
 
     if board is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
 
-    session.delete(board)
-    session.commit()
+    await session.delete(board)
+    await session.commit()

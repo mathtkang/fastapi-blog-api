@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter, HTTPException
 from db.db import get_session
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
 from db import models as m
 from sqlalchemy.sql import expression as sql_exp
@@ -18,7 +18,7 @@ class AuthSignupRequest(BaseModel):
 
 
 @router.post("/signup")
-def signup(q: AuthSignupRequest, session: Session = Depends(get_session)):
+async def signup(q: AuthSignupRequest, session: Session = Depends(get_session)):
     """
     This is the endpoint for the login page.
     """
@@ -30,7 +30,7 @@ def signup(q: AuthSignupRequest, session: Session = Depends(get_session)):
     user = m.User(email=q.email, password=generate_hashed_password(q.password))
 
     session.add(user)
-    session.commit()
+    await session.commit()
 
 
 class LoginResponse(BaseModel):
@@ -38,10 +38,10 @@ class LoginResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(q: AuthSignupRequest, session: Session = Depends(get_session)):
-    user: m.User | None = session.execute(
+async def login(q: AuthSignupRequest, session: Session = Depends(get_session)):
+    user: m.User | None = await session.scalar(
         sql_exp.select(m.User).where(m.User.email == q.email)
-    ).scalar_one_or_none()
+    )
 
     if user is None:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="user not found")
