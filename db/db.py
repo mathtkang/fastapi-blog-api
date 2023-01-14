@@ -2,11 +2,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+)
 
-engine = create_engine(
-    "postgresql://practice:devpassword@localhost:35000/fastapi-practice",
-    echo=True,
-    future=True,
+engine = create_async_engine(
+    "postgresql+asyncpg://practice:devpassword@localhost:35000/fastapi-practice"
 )  # 연결완료 (Singleton pattern)
 # <user>:<password>@<localhost>:<port>:<databaseName>
 
@@ -27,10 +29,7 @@ engine = create_engine(
 #     for row in result:
 #         print(f"x: {row.x}  y: {row.y}")
 
-# TODO -> 1:1 or n:m
-# https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many
 
-
-def get_session() -> Session:
-    with Session(engine) as session:
+async def get_session() -> AsyncSession:
+    async with AsyncSession(engine) as session:
         yield session
