@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, TIMESTAMP
 from sqlalchemy import text as sql_text
 from sqlalchemy.schema import FetchedValue
-from sqlalchemy.orm import sessionmaker, column_property, ColumnProperty, relationship, backref
+from sqlalchemy.orm import ColumnProperty, column_property, relationship, backref
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy.sql import func as sa_func
 
@@ -12,10 +12,6 @@ from sqlalchemy.sql import func as sa_func
 Base = declarative_base()
 
 TZ_UTC = datetime.timezone.utc
-
-
-# TODO -> 1:1 or n:m
-# https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#one-to-many
 
 
 class UserRoleEnum(int, enum.Enum):
