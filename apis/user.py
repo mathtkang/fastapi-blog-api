@@ -2,7 +2,7 @@ from fastapi import Depends, APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from db.db import get_session
 from utils.auth import resolve_access_token, validate_user_role
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
 from db import models as m
 from sqlalchemy.sql import expression as sql_exp
@@ -34,26 +34,28 @@ class GetUserResponse(BaseModel):
 
 
 @router.get("")
-def get_all_users(
+async def get_all_users(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
     validate_user_role(user_id, m.UserRoleEnum.Admin, session)  # Admin = 25
 
-    users: list[m.User] = session.execute(sql_exp.select(m.User)).scalars().all()
+    users: list[m.User] = (
+        await session.scalars(sql_exp.select(m.User))
+    ).all()
 
     return [GetUserResponse.from_orm(user) for user in users]
 
 
 @router.get("/me")
-def get_me(
+async def get_me(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
     blob_client: S3Client = Depends(get_blob_client),
 ):
-    user: m.User | None = session.execute(
+    user: m.User | None = await session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
+    )
 
     if user is None:
         raise HTTPException(
@@ -79,14 +81,14 @@ class PutUserRequest(BaseModel):
 
 
 @router.put("/me")
-def update_me(
+async def update_me(
     q: PutUserRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    user: m.User | None = session.execute(
+    user: m.User | None = await session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
+    )
 
     if user is None:
         raise HTTPException(
@@ -97,7 +99,7 @@ def update_me(
     user.profile_file_key = q.profile_file_key
 
     session.add(user)
-    session.commit()
+    await session.commit()
 
 
 class PostRoleRequest(BaseModel):
@@ -106,21 +108,21 @@ class PostRoleRequest(BaseModel):
 
 
 @router.put("/role")
-def change_user_role(
+async def change_user_role(
     q: PostRoleRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
     validate_user_role(user_id, m.UserRoleEnum.Owner, session)
 
-    user: m.User | None = session.execute(
+    user: m.User | None = await session.scalar(
         sql_exp.select(m.User).where(m.User.id == q.user_id)
-    ).scalar_one_or_none()
+    )
 
     user.role = q.role
 
     session.add(user)
-    session.commit()
+    await session.commit()
 
 
 class PostPasswordRequest(BaseModel):
@@ -129,14 +131,14 @@ class PostPasswordRequest(BaseModel):
 
 
 @router.put("/change-password")
-def change_password(
+async def change_password(
     q: PostPasswordRequest,
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    user: m.User | None = session.execute(
+    user: m.User | None = await session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
+    )
 
     if not validate_hashed_password(q.old_password, user.password):
         raise HTTPException(
@@ -146,4 +148,4 @@ def change_password(
     user.password = generate_hashed_password(q.new_password)
 
     session.add(user)
-    session.commit()
+    await session.commit()
