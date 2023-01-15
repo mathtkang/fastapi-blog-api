@@ -2,9 +2,7 @@ import hashlib, os, binascii, jwt
 import dataclasses
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends, HTTPException
-from db.db import get_session
 from db import models as m
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy.sql import expression as sql_exp
 from starlette.status import (
