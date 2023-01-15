@@ -5,8 +5,12 @@ from fastapi import Depends, HTTPException
 from db.db import get_session
 from db import models as m
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy.sql import expression as sql_exp
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from starlette.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN
+)
 
 _PBKDF2_HASH_NAME = "SHA256"
 _PBKDF2_ITERATIONS = 100_000
@@ -87,10 +91,10 @@ def resolve_access_token(
     return validate_access_token(credentials.credentials)
 
 
-def validate_user_role(user_id: int, role: m.UserRoleEnum, session: Session):
-    user: m.User | None = session.execute(
+async def validate_user_role(user_id: int, role: m.UserRoleEnum, session: Session):
+    user: m.User | None = await session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
-    ).scalar_one_or_none()
+    )
 
     if user is None:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="user not found")
