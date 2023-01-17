@@ -7,6 +7,7 @@ from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
+from typing import Literal
 
 router = APIRouter(prefix="/boards", tags=["boards"])
 
@@ -26,8 +27,8 @@ class GetBoardResponse(BaseModel):
 
 
 @router.get("/")
-async def read_board(session: Session = Depends(get_session)):
-    boards: list[m.Board] = (await session.scalars(sql_exp.select(m.Board))).all()
+def read_board(session: Session = Depends(get_session)):
+    boards: list[m.Board] = (session.scalars(sql_exp.select(m.Board))).all()
 
     # return [
     #     GetBoardResponse(
@@ -39,6 +40,51 @@ async def read_board(session: Session = Depends(get_session)):
     #     for board in boards
     # ]
     return [GetBoardResponse.from_orm(board) for board in boards]
+
+
+@router.get("/{board_id}")
+def get_board(
+    board_id: int,
+    session: Session = Depends(get_session),
+):
+    board: m.Board = session.scalar(
+        sql_exp.select(m.Board).where(m.Board.id == board_id)
+    )
+
+    if board is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+
+    return GetBoardResponse.from_orm(board)
+
+
+class SearchBoardRequest(BaseModel):
+    # filter (query parameters)
+    like_user_id: int | None
+    written_user_id: int | None
+    board_id: int | None
+    # sort
+    sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
+        "written_user_id"
+    ] = "created_at"
+    sort_direction: Literal["asc"] | Literal["desc"] = "asc"
+    # pagination
+    offset: int = 0
+    count: int = 20
+
+
+class SearchBoardResponse(BaseModel):
+    posts: list[GetBoardResponse]
+    count: int
+
+
+# TODO: search board
+@router.post("/search")
+def search_board(
+    q: SearchBoardRequest,
+    session: Session = Depends(get_session),
+):
+    pass
+
 
 
 class PostBoardRequest(BaseModel):
