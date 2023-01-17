@@ -26,20 +26,20 @@ class GetBoardResponse(BaseModel):
     """
 
 
-@router.get("/")
-async def read_board(session: Session = Depends(get_session)):
-    boards: list[m.Board] = (await session.scalars(sql_exp.select(m.Board))).all()
+# @router.get("/")
+# async def read_board(session: Session = Depends(get_session)):
+#     boards: list[m.Board] = (await session.scalars(sql_exp.select(m.Board))).all()
 
-    # return [
-    #     GetBoardResponse(
-    #         id=board.id,
-    #         name=board.name,
-    #         created_at=board.created_at,
-    #         updated_at=board.updated_at,
-    #     )
-    #     for board in boards
-    # ]
-    return [GetBoardResponse.from_orm(board) for board in boards]
+#     # return [
+#     #     GetBoardResponse(
+#     #         id=board.id,
+#     #         name=board.name,
+#     #         created_at=board.created_at,
+#     #         updated_at=board.updated_at,
+#     #     )
+#     #     for board in boards
+#     # ]
+#     return [GetBoardResponse.from_orm(board) for board in boards]
 
 
 @router.get("/{board_id}")
