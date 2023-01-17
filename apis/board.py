@@ -27,8 +27,8 @@ class GetBoardResponse(BaseModel):
 
 
 @router.get("/")
-def read_board(session: Session = Depends(get_session)):
-    boards: list[m.Board] = (session.scalars(sql_exp.select(m.Board))).all()
+async def read_board(session: Session = Depends(get_session)):
+    boards: list[m.Board] = (await session.scalars(sql_exp.select(m.Board))).all()
 
     # return [
     #     GetBoardResponse(
@@ -43,11 +43,11 @@ def read_board(session: Session = Depends(get_session)):
 
 
 @router.get("/{board_id}")
-def get_board(
+async def get_board(
     board_id: int,
     session: Session = Depends(get_session),
 ):
-    board: m.Board = session.scalar(
+    board: m.Board = await session.scalar(
         sql_exp.select(m.Board).where(m.Board.id == board_id)
     )
 
@@ -77,9 +77,9 @@ class SearchBoardResponse(BaseModel):
     count: int
 
 
-# TODO: search board
+# TODO: search
 @router.post("/search")
-def search_board(
+async def search_board(
     q: SearchBoardRequest,
     session: Session = Depends(get_session),
 ):
