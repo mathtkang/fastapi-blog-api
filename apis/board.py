@@ -18,29 +18,17 @@ class GetBoardResponse(BaseModel):
     title: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
+    written_user_id: int
+
+    class Config:
+        orm_mode = True
 
     """
-    데이터의 구조를 정의하는 (사용자)인터페이스
+    [데이터의 구조를 정의하는 (사용자)인터페이스]
     1. 보여주면 안되는 필드 있을 수 있음
     2. 새로운 필드를 넣어주기도 함
     3. 1:1 매칭이 되지 않을 수 있다.
     """
-
-
-# @router.get("/")
-# async def read_board(session: Session = Depends(get_session)):
-#     boards: list[m.Board] = (await session.scalars(sql_exp.select(m.Board))).all()
-
-#     # return [
-#     #     GetBoardResponse(
-#     #         id=board.id,
-#     #         title=board.title,
-#     #         created_at=board.created_at,
-#     #         updated_at=board.updated_at,
-#     #     )
-#     #     for board in boards
-#     # ]
-#     return [GetBoardResponse.from_orm(board) for board in boards]
 
 
 @router.get("/{board_id}")
@@ -90,20 +78,16 @@ async def search_board(
         sql_exp.select(sql_func.count()).select_from(board_query)
     )
 
-    sort_by_column = {
-        "created_at": m.Board.created_at,
-        "updated_at": m.Board.updated_at,
-        "written_user_id": m.Board.written_user_id,
-    }[q.sort_by]
-
-    sort_exp = {
-        "asc": sort_by_column.asc(),
-        "desc": sort_by_column.desc(),
-    }[q.sort_direction]
-
-    board_query = board_query.order_by(sort_exp)
+    board_query = board_query.order_by(
+        getattr(getattr(m.Board, q.sort_by), q.sort_direction)()
+    )
+    if q.sort_direction is "asc":
+        board_query = board_query.order_by(getattr(m.Board, q.sort_by).asc())
+    else:  # "desc"
+        board_query = board_query.order_by(getattr(m.Board, q.sort_by).desc())
 
     board_query = board_query.offset(q.offset).limit(q.count)
+
     boards = (await session.scalars(board_query)).all()
 
     return SearchBoardResponse(
