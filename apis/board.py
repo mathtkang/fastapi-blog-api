@@ -8,13 +8,14 @@ from pydantic import BaseModel
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from typing import Literal
+from sqlalchemy.sql import func as sql_func
 
 router = APIRouter(prefix="/boards", tags=["boards"])
 
 
 class GetBoardResponse(BaseModel):
     id: int
-    name: str
+    title: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
@@ -33,7 +34,7 @@ class GetBoardResponse(BaseModel):
 #     # return [
 #     #     GetBoardResponse(
 #     #         id=board.id,
-#     #         name=board.name,
+#     #         title=board.title,
 #     #         created_at=board.created_at,
 #     #         updated_at=board.updated_at,
 #     #     )
@@ -59,9 +60,7 @@ async def get_board(
 
 class SearchBoardRequest(BaseModel):
     # filter (query parameters)
-    like_user_id: int | None
     written_user_id: int | None
-    board_id: int | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
         "written_user_id"
@@ -83,12 +82,39 @@ async def search_board(
     q: SearchBoardRequest,
     session: Session = Depends(get_session),
 ):
-    pass
+    board_query = sql_exp.select(m.Board)
 
+    if q.written_user_id is not None:
+        post_query = post_query.where(m.Board.written_user_id == q.written_user_id)
+
+    board_cnt: int = await session.scalar(
+        sql_exp.select(sql_func.count()).select_from(post_query)
+    )
+
+    sort_by_column = {
+        "created_at": m.Board.created_at,
+        "updated_at": m.Board.updated_at,
+        "written_user_id": m.Board.written_user_id,
+    }[q.sort_by]
+
+    sort_exp = {
+        "asc": sort_by_column.asc(),
+        "desc": sort_by_column.desc(),
+    }[q.sort_direction]
+
+    board_query = board_query.order_by(sort_exp)
+
+    board_query = board_query.offset(q.offset).limit(q.count)
+    boards = (await session.scalars(board_query)).all()
+
+    return SearchBoardResponse(
+        boards=[GetBoardResponse.from_orm(board) for board in boards],
+        count=board_cnt,
+    )
 
 
 class PostBoardRequest(BaseModel):
-    name: str
+    title: str
 
 
 @router.post("/")
@@ -100,7 +126,7 @@ async def create_board(
     validate_user_role(user_id, m.UserRoleEnum.Admin, session)
 
     board = m.Board(
-        name=q.name,
+        title=q.title,
     )
 
     session.add(board)
@@ -125,7 +151,7 @@ async def update_board(
     if board is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
 
-    board.name = q.name
+    board.title = q.title
 
     session.add(board)
     await session.commit()
