@@ -72,11 +72,10 @@ class SearchBoardRequest(BaseModel):
 
 
 class SearchBoardResponse(BaseModel):
-    posts: list[GetBoardResponse]
+    boards: list[GetBoardResponse]
     count: int
 
 
-# TODO: search
 @router.post("/search")
 async def search_board(
     q: SearchBoardRequest,
@@ -85,10 +84,10 @@ async def search_board(
     board_query = sql_exp.select(m.Board)
 
     if q.written_user_id is not None:
-        post_query = post_query.where(m.Board.written_user_id == q.written_user_id)
+        board_query = board_query.where(m.Board.written_user_id == q.written_user_id)
 
     board_cnt: int = await session.scalar(
-        sql_exp.select(sql_func.count()).select_from(post_query)
+        sql_exp.select(sql_func.count()).select_from(board_query)
     )
 
     sort_by_column = {
