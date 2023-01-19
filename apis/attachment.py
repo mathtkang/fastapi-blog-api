@@ -6,17 +6,9 @@ from pydantic import BaseModel
 from db import models as m
 from sqlalchemy.sql import expression as sql_exp
 from utils.blob import upload_image
-from utils.auth import generate_hashed_password, validate_hashed_password
-from starlette.status import (
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-)
-import jwt, time
+from starlette.status import HTTP_403_FORBIDDEN
 from mypy_boto3_s3.client import S3Client
 from utils.blob import get_blob_client
-from utils.misc import get_random_string
 
 
 router = APIRouter(prefix="/attachment", tags=["attachment"])
@@ -50,7 +42,12 @@ async def post_attachment(
             status_code=HTTP_403_FORBIDDEN,
             detail="User not found",
         )
-    attachment_file_key = await upload_image(blob_client, user_id, file.filename, file.file)
+    attachment_file_key = await upload_image(
+        blob_client, 
+        user_id, 
+        file.filee, 
+        file.file
+    )
 
     return PostAttachmentResponse(bucket="fastapi-practice", key=attachment_file_key)
 
@@ -62,12 +59,3 @@ async def post_attachment(
 # 3. upload attachment key to post or user
 # 4. get attachment file url by user get endpoint or post get endpoint
 
-
-
-
-'''
-하나의 엔드포인트에 대해서?
-1. Client가 Server에게 Request를 날렸다.
-
-final. Client가 Server로부터 Response를 받았다.
-'''
