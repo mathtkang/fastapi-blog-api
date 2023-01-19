@@ -24,7 +24,8 @@ class Board(Base):
     __tablename__ = "board"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(150), nullable=False)
+    title = Column(String(150), nullable=False)
+    written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
     created_at = Column(
         TIMESTAMP(timezone=True),
         server_default=sql_text("CURRENT_TIMESTAMP"),
@@ -36,6 +37,7 @@ class Board(Base):
         server_default=sql_text("CURRENT_TIMESTAMP"),
         server_onupdate=FetchedValue(),
     )
+    written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
 
     def __repr__(self):
