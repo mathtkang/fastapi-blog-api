@@ -86,7 +86,7 @@ async def search_post(
         sql_exp.select(sql_func.count()).select_from(post_query)
     )
 
-    # sorting way1) dictionary
+    # [sorting way1) dictionary]
     sort_by_column = {
         "created_at": m.Post.created_at,
         "updated_at": m.Post.updated_at,
@@ -100,7 +100,7 @@ async def search_post(
 
     post_query = post_query.order_by(sort_exp)
 
-    # sorting way2) getattr() method
+    # [sorting way2) getattr() method]
     # post_query = post_query.order_by(
     #     getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
     # )
@@ -124,10 +124,6 @@ class PostPostRequest(BaseModel):
     board_id: int
 
 
-class PostHashtagRequest(BaseModel):
-    name: str
-
-
 @router.post("/")
 async def create_post(
     q: PostPostRequest,
@@ -147,6 +143,7 @@ async def create_post(
     pattern = "#([0-9a-zA-Z가-힣]*)"
     hashtags = re.compile(pattern).findall(content)  # type:list
 
+    # question
     await session.execute(
         pg_insert(m.Hashtag)
         .values([{"name": hashtag} for hashtag in hashtags])
@@ -163,9 +160,9 @@ async def update_post(
     session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = await session.execute(
+    post: m.Post | None = await session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
-    ).scalar_one_or_none()
+    )
 
     if post is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
