@@ -1,8 +1,15 @@
 from fastapi import FastAPI
-from apis import API_ROUTERS
+import uvicorn
+from app.controllers import API_ROUTERS
+from app.settings import AppSettings
+from app import create_app
 
-app = FastAPI()
+
+# settings: AppSettings
+# app_settings = AppSettings()
+
+app = create_app(AppSettings())
 
 
-for router in API_ROUTERS:
-    app.include_router(router)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5432)
