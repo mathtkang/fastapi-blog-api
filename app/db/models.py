@@ -8,6 +8,9 @@ from sqlalchemy.orm import ColumnProperty, column_property, relationship, backre
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy.sql import func as sa_func
 
+
+from base import ModelBase
+
 # orm 매핑 함수 선언
 Base = declarative_base()
 
@@ -20,23 +23,12 @@ class UserRoleEnum(int, enum.Enum):
     User = 0
 
 
-class Board(Base):
+class Board(ModelBase):
     __tablename__ = "board"
 
     id = Column(Integer, primary_key=True)
     title = Column(String(150), nullable=False)
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
     written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
 
@@ -46,23 +38,12 @@ class Board(Base):
         return result
 
 
-class Post(Base):
+class Post(ModelBase):
     __tablename__ = "post"
 
     id = Column(Integer, primary_key=True)
     title = Column(String(150), nullable=False)
     content = Column(Text, nullable=True, default=None)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
     like_cnt: ColumnProperty
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
     written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
@@ -75,23 +56,12 @@ class Post(Base):
     # hashtags = relationship("Hasttag", uselist=False, back_populates="post", cascade="all")
 
 
-class User(Base):
+class User(ModelBase):
     __tablename__ = "user"
 
     id = Column(Integer, primary_key=True)
     email = Column(String(150), nullable=False)
     password = Column(String(256), nullable=False)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
     role = Column(Integer, nullable=False, default=UserRoleEnum.User)
     profile_file_key = Column(String(255), nullable=True)
     posts = relationship(
@@ -112,7 +82,7 @@ class Like(Base):
     user = relationship("User", uselist=False)
 
 
-class Comment(Base):
+class Comment(ModelBase):
     __tablename__ = "comment"
 
     id = Column(Integer, primary_key=True)
@@ -127,34 +97,11 @@ class Comment(Base):
         "Comment", uselist=True, backref=backref("parent_comment", remote_side=[id]), cascade="all"
     )
 
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
 
-
-class Hashtag(Base):
+class Hashtag(ModelBase):
     __tablename__ = "hashtag"
 
     name = Column(String, primary_key=True)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue()
-    )
 
 
 class PostHashTag(Base):
