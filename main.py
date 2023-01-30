@@ -5,10 +5,9 @@ from app.settings import AppSettings
 from app import create_app
 
 
-# settings: AppSettings
-# app_settings = AppSettings()
+app_settings = AppSettings()
 
-app = create_app(AppSettings())
+app = create_app(app_settings)
 
 
 if __name__ == "__main__":
