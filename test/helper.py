@@ -1,5 +1,5 @@
-from db.base_ import ModelBase
-from utils.ctx import AppCtx
+from app.database.base_ import ModelBase
+from app.utils.ctx import AppCtx
 
 
 async def ensure_fresh_env() -> None:

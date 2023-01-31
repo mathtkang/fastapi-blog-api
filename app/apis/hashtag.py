@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
-from utils.auth import generate_hashed_password, validate_hashed_password
+from app.utils.auth import generate_hashed_password, validate_hashed_password
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
 import datetime
 

@@ -1,16 +1,14 @@
 from fastapi import Depends, APIRouter, HTTPException, UploadFile
 from app.database.db import get_session
-from utils.auth import resolve_access_token
-
-# here
+from app.utils.auth import resolve_access_token
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
 from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
-from utils.blob import upload_image
+from app.utils.blob import upload_image
 from starlette.status import HTTP_403_FORBIDDEN
 from mypy_boto3_s3.client import S3Client
-from utils.blob import get_blob_client
+from app.utils.blob import get_blob_client
 
 
 router = APIRouter(prefix="/attachment", tags=["attachment"])

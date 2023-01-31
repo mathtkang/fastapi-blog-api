@@ -5,8 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
-    create_async_engine,
-    async_scoped_session,
+    create_async_engine
 )
 from app.settings import AppSettings
 

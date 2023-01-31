@@ -4,7 +4,7 @@ import asyncio
 import io
 from concurrent.futures import ThreadPoolExecutor
 from botocore.exceptions import ClientError
-from utils.misc import get_random_string
+from app.utils.misc import get_random_string
 
 
 _executor = ThreadPoolExecutor(10)

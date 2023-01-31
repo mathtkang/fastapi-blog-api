@@ -4,7 +4,7 @@ from mypy_boto3_s3 import S3Client
 
 if TYPE_CHECKING:
     from app.settings import AppSettings
-    from db.db import engine
+    from app.database.db import engine
 
 
 class AppCtx(NamedTuple):

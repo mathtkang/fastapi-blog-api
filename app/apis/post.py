@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, APIRouter
 from app.database.db import get_session
-from utils.auth import resolve_access_token
+from app.utils.auth import resolve_access_token
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
