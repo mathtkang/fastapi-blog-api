@@ -1,9 +1,9 @@
 from pydantic import BaseSettings, PostgresDsn, Field
 
 class AppSettings(BaseSettings):
-    DATABASE_URI: PostgresDsn = Field(
+    DATABASE_URL: PostgresDsn = Field(
         default="postgresql+asyncpg://practice:devpassword@localhost:35000/fastapi-practice",
-        description="PosstgreSQL connection URI.",
+        description="PosstgreSQL connection URL.",
     )
 
     AWS_ACCESS_KEY_ID: str = Field(default="", description="aws access key id")

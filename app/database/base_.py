@@ -7,10 +7,10 @@ from sqlalchemy.orm import object_session
 
 
 
-if TYPE_CHECKING:
-    from sqlalchemy.sql.schema import ColumnCollectionConstraint, MetaData, Table
-    from sqlalchemy.ext.declarative import DeclarativeMeta
-    from sqlalchemy.orm.session import Session
+# if TYPE_CHECKING:
+from sqlalchemy.sql.schema import ColumnCollectionConstraint, MetaData, Table
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm.session import Session
 
 
 # orm 매핑 함수 선언

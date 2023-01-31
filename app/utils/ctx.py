@@ -3,15 +3,16 @@ from mypy_boto3_s3 import S3Client
 
 
 if TYPE_CHECKING:
-    from .settings import AppSettings
+    from app.settings import AppSettings
     from db.db import engine
 
 
 class AppCtx(NamedTuple):
-    if TYPE_CHECKING:  # type: ignore
-        current: AppCtx  # question
+    # if TYPE_CHECKING:  # type: ignore
+    #     current: AppCtx  # question
 
-    settings: AppSettings
+    app_settings: AppSettings
+    # settings: AppSettings
     db: engine
     s3: S3Client
 

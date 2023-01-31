@@ -1,12 +1,16 @@
+# from . import app
 from fastapi import FastAPI
-from controllers import API_ROUTERS
-from settings import AppSettings
+from .settings import AppSettings
+from .apis import API_ROUTERS
+
+
 
 
 def create_app(app_settings: AppSettings) -> FastAPI:
+    # 앱 함수 실행
     app = FastAPI()
-    # app_settings = app.settings  # question
 
+    # 라우터 정의
     for api_router in API_ROUTERS:
         app.include_router(api_router)
 

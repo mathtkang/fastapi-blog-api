@@ -1,9 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException, UploadFile
-from db.db import get_session
+from app.database.db import get_session
 from utils.auth import resolve_access_token
+
+# here
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
-from db import models as m
+from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
 from utils.blob import upload_image
 from starlette.status import HTTP_403_FORBIDDEN

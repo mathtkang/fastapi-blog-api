@@ -1,18 +1,19 @@
 import enum
 import datetime
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, TIMESTAMP
 from sqlalchemy import text as sql_text
 from sqlalchemy.schema import FetchedValue
 from sqlalchemy.orm import ColumnProperty, column_property, relationship, backref
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy.sql import func as sa_func
+from sqlalchemy.ext.declarative import declarative_base
 
 
-from base import ModelBase
+from .base_ import ModelBase
 
 # orm 매핑 함수 선언
 Base = declarative_base()
+
 
 TZ_UTC = datetime.timezone.utc
 

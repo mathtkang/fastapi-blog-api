@@ -1,8 +1,8 @@
 from fastapi import Depends, APIRouter, HTTPException
-from db.db import get_session
+from app.database.db import get_session
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
-from db import models as m
+from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
 from utils.auth import generate_hashed_password, validate_hashed_password
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST

@@ -1,8 +1,8 @@
 from fastapi import Depends, HTTPException, APIRouter
-from db.db import get_session
+from app.database.db import get_session
 from utils.auth import resolve_access_token
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-import db.models as m
+from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime

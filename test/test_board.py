@@ -2,7 +2,7 @@ import pytest_asyncio
 import pytest
 import json
 from httpx import AsyncClient
-from app.controllers.board import router
+from apis.board import router
 
 
 class TestBoard:
