@@ -1,9 +1,6 @@
-# from . import app
 from fastapi import FastAPI
 from .settings import AppSettings
 from .apis import API_ROUTERS
-
-
 
 
 def create_app(app_settings: AppSettings) -> FastAPI:
