@@ -1,14 +1,14 @@
 from fastapi import Depends, HTTPException, APIRouter
-from app.database.db import get_session
-from app.utils.auth import resolve_access_token, validate_user_role
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from typing import Literal
 from sqlalchemy.sql import func as sql_func
+from app.utils.auth import resolve_access_token, validate_user_role
+from app.database import models as m
+from app.utils.ctx import AppCtx
 
 router = APIRouter(prefix="/boards", tags=["boards"])
 
@@ -33,10 +33,9 @@ class GetBoardResponse(BaseModel):
 
 @router.get("/{board_id}")
 async def get_board(
-    board_id: int,
-    session: Session = Depends(get_session),
+    board_id: int
 ):
-    board: m.Board = await session.scalar(
+    board: m.Board = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Board).where(m.Board.id == board_id)
     )
 
@@ -66,15 +65,14 @@ class SearchBoardResponse(BaseModel):
 
 @router.post("/search")
 async def search_board(
-    q: SearchBoardRequest,
-    session: Session = Depends(get_session),
+    q: SearchBoardRequest
 ):
     board_query = sql_exp.select(m.Board)
 
     if q.written_user_id is not None:
         board_query = board_query.where(m.Board.written_user_id == q.written_user_id)
 
-    board_cnt: int = await session.scalar(
+    board_cnt: int = await AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(board_query)
     )
 
@@ -88,7 +86,7 @@ async def search_board(
 
     board_query = board_query.offset(q.offset).limit(q.count)
 
-    boards = (await session.scalars(board_query)).all()
+    boards = (await AppCtx.current.db.session.scalars(board_query)).all()
 
     return SearchBoardResponse(
         boards=[GetBoardResponse.from_orm(board) for board in boards],
@@ -103,30 +101,28 @@ class PostBoardRequest(BaseModel):
 @router.post("/")
 async def create_board(
     q: PostBoardRequest,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, session)
+    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
 
     board = m.Board(
         title=q.title,
     )
 
-    session.add(board)
-    await session.commit()
+    AppCtx.current.db.session.add(board)
+    await AppCtx.current.db.session.commit()
 
 
 @router.put("/{board_id:int}")
 async def update_board(
     board_id: int,
     q: PostBoardRequest,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, session)
+    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
 
     board: m.Board | None = (
-        await session.execute(
+        await AppCtx.current.db.session.execute(
             sql_exp.select(m.Board).where(m.Board.id == board_id)
         )
     ).scalar_one_or_none()
@@ -136,20 +132,19 @@ async def update_board(
 
     board.title = q.title
 
-    session.add(board)
-    await session.commit()
+    AppCtx.current.db.session.add(board)
+    await AppCtx.current.db.session.commit()
 
 
 @router.delete("/{board_id:int}")
 async def delete_board(
     board_id: int,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, session)
+    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
 
     board: m.Board | None = (
-        await session.execute(
+        await AppCtx.current.db.session.execute(
             sql_exp.select(m.Board).where(m.Board.id == board_id)
         )
     ).scalar_one_or_none()
@@ -157,5 +152,5 @@ async def delete_board(
     if board is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
 
-    await session.delete(board)
-    await session.commit()
+    await AppCtx.current.db.session.delete(board)
+    await AppCtx.current.db.session.commit()

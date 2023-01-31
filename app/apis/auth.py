@@ -1,12 +1,12 @@
 from fastapi import Depends, APIRouter, HTTPException
-from app.database.db import get_session
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
-from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
-from app.utils.auth import generate_hashed_password, validate_hashed_password
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
 import jwt, time
+from app.database import models as m
+from app.utils.auth import generate_hashed_password, validate_hashed_password
+from app.utils.ctx import AppCtx
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -18,19 +18,22 @@ class AuthSignupRequest(BaseModel):
 
 
 @router.post("/signup")
-async def signup(q: AuthSignupRequest, session: Session = Depends(get_session)):
+async def signup(q: AuthSignupRequest):
     """
     This is the endpoint for the login page.
     """
-    if session.scalar(sql_exp.exists().where(m.User.email == q.email).select()):
+    is_email_exist = await AppCtx.current.db.session.scalar(
+        sql_exp.exists().where(m.User.email == q.email).select()
+    )
+    if is_email_exist:
         raise HTTPException(
             status_code=HTTP_409_CONFLICT, detail="Email already exists"
         )
 
     user = m.User(email=q.email, password=generate_hashed_password(q.password))
 
-    session.add(user)
-    await session.commit()
+    AppCtx.current.db.session.add(user)
+    await AppCtx.current.db.session.commit()
 
 
 class LoginResponse(BaseModel):
@@ -38,8 +41,8 @@ class LoginResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(q: AuthSignupRequest, session: Session = Depends(get_session)):
-    user: m.User | None = await session.scalar(
+async def login(q: AuthSignupRequest):
+    user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.email == q.email)
     )
 

@@ -1,8 +1,5 @@
 from fastapi import Depends, HTTPException, APIRouter
-from app.database.db import get_session
-from app.utils.auth import resolve_access_token
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime
@@ -11,6 +8,9 @@ import re
 from typing import Literal
 from sqlalchemy.sql import func as sql_func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from app.utils.auth import resolve_access_token
+from app.database import models as m
+from app.utils.ctx import AppCtx
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -32,10 +32,9 @@ class GetPostResponse(BaseModel):
 @router.get("/{post_id}")
 async def get_post(
     post_id: int,
-    session: Session = Depends(get_session),
 ):
     post: m.Post = (
-        await session.execute(
+        await AppCtx.current.db.session.execute(
             sql_exp.select(m.Post).where(m.Post.id == post_id)
         )
     ).scalar_one_or_none()
@@ -69,7 +68,6 @@ class SearchPostResponse(BaseModel):
 @router.post("/search")
 async def search_post(
     q: SearchPostRequest,
-    session: Session = Depends(get_session),
 ):
     post_query = sql_exp.select(m.Post)
 
@@ -82,7 +80,7 @@ async def search_post(
     if q.board_id is not None:
         post_query = post_query.where(m.Post.board_id == q.board_id)
 
-    post_cnt: int = await session.scalar(
+    post_cnt: int = await AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(post_query)
     )
 
@@ -110,7 +108,7 @@ async def search_post(
     #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
 
     post_query = post_query.offset(q.offset).limit(q.count)
-    posts = (await session.scalars(post_query)).all()
+    posts = (await AppCtx.current.db.session.scalars(post_query)).all()
 
     return SearchPostResponse(
         posts=[GetPostResponse.from_orm(post) for post in posts],
@@ -127,7 +125,6 @@ class PostPostRequest(BaseModel):
 @router.post("/")
 async def create_post(
     q: PostPostRequest,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
     post = m.Post(
@@ -137,37 +134,32 @@ async def create_post(
         written_user_id=user_id,
     )
 
-    session.add(post)
+    AppCtx.current.db.session.add(post)
 
     content = q.content
     pattern = "#([0-9a-zA-Z가-힣]*)"
-    hashtags = re.compile(pattern).findall(content)  # type:list
+    hashtags = re.compile(pattern).findall(content)  # type: list
 
-    
-    # question
-    await session.execute(
+    await AppCtx.current.db.session.execute(
         pg_insert(m.Hashtag)
         .values([{"name": hashtag} for hashtag in hashtags])
         .on_conflict_do_nothing()  # This is only available with postgresql
     )
     """
-    [위의 SQLAlchemy 코드를 SQL코드로 바꾸면 아래와 같이 된다.]
     INSERT INTO hastag
     VALUES (name) (
         'code',
         'camp',
     )
-    ON CONFLICT DO NOTHING; <-- 
+    ON CONFLICT DO NOTHING;
     """
 
-    await session.commit()
+    await AppCtx.current.db.session.commit()
 
     """
     [아래 1,2 코드의 문제점]
     1. 너무 느림(전체를 다 탐색하면 안됨)
     모든 태그 비교가 아닌, 새롭게 받은 태그를 db와 비교해서 insert+update 를 해줘야한다.
-    
-    
     """
 
     # [처음 작성한 코드1]
@@ -205,10 +197,9 @@ async def create_post(
 async def update_post(
     post_id: int,
     q: PostPostRequest,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = await session.scalar(
+    post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )
 
@@ -223,17 +214,16 @@ async def update_post(
     post.title = q.title
     post.content = q.content
 
-    session.add(post)
-    await session.commit()
+    AppCtx.current.db.session.add(post)
+    await AppCtx.current.db.session.commit()
 
 
 @router.delete("/{post_id:int}")
 async def delete_post(
     post_id: int,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = await session.scalar(
+    post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )
 
@@ -245,24 +235,23 @@ async def delete_post(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your post"
         )
 
-    await session.delete(post)
-    await session.commit()
+    await AppCtx.current.db.session.delete(post)
+    await AppCtx.current.db.session.commit()
 
 
 @router.post("/{post_id:int}/like")
 async def like_post(
     post_id: int,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = await session.scalar(
+    post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )
 
     if post is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
 
-    like: m.Like | None = await session.scalar(
+    like: m.Like | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Like).where(
             (m.Like.post_id == post_id) & (m.Like.user_id == user_id)
         )
@@ -276,24 +265,23 @@ async def like_post(
         user_id=user_id,
     )
 
-    session.add(like)
-    await session.commit()
+    AppCtx.current.db.session.add(like)
+    await AppCtx.current.db.session.commit()
 
 
 @router.delete("/{post_id:int}/like")
 async def like_delete(
     post_id: int,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    post: m.Post | None = await session.scalar(
+    post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )
 
     if post is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
 
-    like: m.Like | None = await session.scalar(
+    like: m.Like | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Like).where(
             (m.Like.post_id == post_id) & (m.Like.user_id == user_id)
         )
@@ -302,5 +290,5 @@ async def like_delete(
     if like is None:
         return
 
-    await session.delete(like)
-    await session.commit()
+    await AppCtx.current.db.session.delete(like)
+    await AppCtx.current.db.session.commit()

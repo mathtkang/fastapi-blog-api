@@ -1,14 +1,14 @@
 from fastapi import Depends, HTTPException, APIRouter
-from app.database.db import get_session
-from app.utils.auth import resolve_access_token, validate_user_role
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
+from sqlalchemy.sql import func as sql_func
 from pydantic import BaseModel, Field
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from typing import Literal
-from sqlalchemy.sql import func as sql_func
+from app.utils.auth import resolve_access_token, validate_user_role
+from app.database import models as m
+from app.utils.ctx import AppCtx
 
 router = APIRouter(prefix="/posts/{post_id:int}/comments", tags=["comments"])
 
@@ -29,9 +29,8 @@ class GetCommentResponse(BaseModel):
 @router.get("/{comment_id:int}")
 async def get_comment(
     comment_id: int,
-    session: Session = Depends(get_session),
 ):
-    comment: m.Comment = await session.scalar(
+    comment: m.Comment = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(m.Comment.id == comment_id)
     )
 
@@ -67,7 +66,6 @@ class SearchCommentResponse(BaseModel):
 @router.post("/search")
 async def search_comments(
     q: SearchCommentRequest,
-    session: Session = Depends(get_session),
 ):
     comment_query = sql_exp.select(m.Comment)
 
@@ -80,7 +78,7 @@ async def search_comments(
     if q.post_id is not None:
         comment_query = comment_query.where(m.Comment.post_id == q.post_id)
 
-    comment_cnt: int = session.scalar(
+    comment_cnt: int = AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(comment_query)
     )
 
@@ -97,7 +95,7 @@ async def search_comments(
     comment_query = comment_query.order_by(sort_exp)
 
     comment_query = comment_query.offset(q.offset).limit(q.count)
-    comments = (await session.scalars(comment_query)).all()
+    comments = (await AppCtx.current.db.session.scalars(comment_query)).all()
 
     return SearchCommentResponse(
         comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
@@ -114,7 +112,6 @@ class PostCommentRequest(BaseModel):
 async def create_comment(
     post_id: int,
     q: PostCommentRequest,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
     comment = m.Comment(
@@ -124,18 +121,17 @@ async def create_comment(
         parent_comment_id=q.parent_comment_id,
     )
 
-    session.add(comment)
-    await session.commit()
+    AppCtx.current.db.session.add(comment)
+    await AppCtx.current.db.session.commit()
 
 
 @router.put("/{comment_id:int}")
 async def update_comment(
     comment_id: int,
     q: PostCommentRequest,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    comment: m.Comment | None = await session.scalar(
+    comment: m.Comment | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.id == comment_id)
         )
@@ -151,17 +147,16 @@ async def update_comment(
 
     comment.content = q.content
 
-    session.add(comment)
-    await session.commit()
+    AppCtx.current.db.session.add(comment)
+    await AppCtx.current.db.session.commit()
 
 
 @router.delete("/{comment_id:int}")
 async def delete_comment(
     comment_id: int,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
 ):
-    comment: m.Comment | None = await session.scalar(
+    comment: m.Comment | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.id == comment_id)
         )
@@ -175,5 +170,5 @@ async def delete_comment(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
         )
 
-    await session.delete(comment)
-    await session.commit()
+    await AppCtx.current.db.session.delete(comment)
+    await AppCtx.current.db.session.commit()

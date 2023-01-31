@@ -1,5 +1,4 @@
 from fastapi import Depends, APIRouter, HTTPException, UploadFile
-from app.database.db import get_session
 from app.utils.auth import resolve_access_token
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import BaseModel
@@ -9,6 +8,7 @@ from app.utils.blob import upload_image
 from starlette.status import HTTP_403_FORBIDDEN
 from mypy_boto3_s3.client import S3Client
 from app.utils.blob import get_blob_client
+from app.utils.ctx import AppCtx
 
 
 router = APIRouter(prefix="/attachment", tags=["attachment"])
@@ -22,7 +22,6 @@ class PostAttachmentResponse(BaseModel):
 @router.post("")
 async def post_attachment(
     file: UploadFile,
-    session: Session = Depends(get_session),
     user_id: int = Depends(resolve_access_token),
     blob_client: S3Client = Depends(get_blob_client),
 ):
@@ -33,7 +32,7 @@ async def post_attachment(
     3. blob client
     4. 사용자의 입력(file)
     """
-    user: m.User | None = await session.scalar(
+    user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
 
