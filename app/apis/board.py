@@ -79,7 +79,7 @@ async def search_board(
     board_query = board_query.order_by(
         getattr(getattr(m.Board, q.sort_by), q.sort_direction)()
     )
-    if q.sort_direction is "asc":
+    if q.sort_direction == "asc":
         board_query = board_query.order_by(getattr(m.Board, q.sort_by).asc())
     else:  # "desc"
         board_query = board_query.order_by(getattr(m.Board, q.sort_by).desc())

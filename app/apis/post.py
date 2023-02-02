@@ -40,7 +40,10 @@ async def get_post(
     ).scalar_one_or_none()
 
     if post is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail=f"The post with {post_id} could not be found."
+        )
 
     return GetPostResponse.from_orm(post)
 
