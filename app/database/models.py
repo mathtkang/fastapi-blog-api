@@ -13,13 +13,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from .base_ import ModelBase
 
 
-# class Base:
-#     __allow_unmapped__ = True
-
-# Base = declarative_base(cls=Base)
-
 # orm 매핑 함수 선언
-Base = declarative_base()
+# Base = declarative_base()  # (sqlalchemy==1.4)
+
+class Base:
+    __allow_unmapped__ = True
+
+Base = declarative_base(cls=Base)  # (sqlalchemy==2.0) ref.https://docs.sqlalchemy.org/en/14/changelog/migration_20.html
+
 
 TZ_UTC = datetime.timezone.utc
 

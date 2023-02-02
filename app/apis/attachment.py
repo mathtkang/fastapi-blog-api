@@ -7,7 +7,6 @@ from sqlalchemy.sql import expression as sql_exp
 from app.utils.blob import upload_image
 from starlette.status import HTTP_403_FORBIDDEN
 from mypy_boto3_s3.client import S3Client
-from app.utils.blob import get_blob_client
 from app.utils.ctx import AppCtx
 
 
@@ -23,7 +22,6 @@ class PostAttachmentResponse(BaseModel):
 async def post_attachment(
     file: UploadFile,
     user_id: int = Depends(resolve_access_token),
-    blob_client: S3Client = Depends(get_blob_client),
 ):
     """
     파일스토리지
@@ -41,14 +39,41 @@ async def post_attachment(
             status_code=HTTP_403_FORBIDDEN,
             detail="User not found",
         )
+
     attachment_file_key = await upload_image(
-        blob_client, 
         user_id, 
         file.filee, 
         file.file
     )
 
     return PostAttachmentResponse(bucket="fastapi-practice", key=attachment_file_key)
+
+
+# class PutUserRequest(BaseModel):
+#     profile_file_key: str | None
+#     # 예) 기본프로필로 변경
+
+# @router.post("/me")
+# async def create_me(
+#     q: PutUserRequest,
+#     user_id: int = Depends(resolve_access_token),
+# ):
+#     user: m.User | None = await AppCtx.current.db.session.scalar(
+#         sql_exp.select(m.User).where(m.User.id == user_id)
+#     )
+
+#     if user is None:
+#         raise HTTPException(
+#             status_code=HTTP_403_FORBIDDEN,
+#             detail="User not found",
+#         )
+
+#     user.profile_file_key = q.profile_file_key
+
+#     AppCtx.current.db.session.add(user)
+#     await AppCtx.current.db.session.commit()
+
+
 
 
 # URL: 제한시간, 해당 리소스에만 접근 가능

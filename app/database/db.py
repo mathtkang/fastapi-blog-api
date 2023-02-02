@@ -46,7 +46,7 @@ async def _asyncpg_prepare(  # type: ignore
 
 class DbConn:
     def __init__(self, db_uri: str) -> None:
-        self.engine: AsyncEngine = create_async_engine(db_uri)
+        self.engine: AsyncEngine = create_async_engine(db_uri)  # db 세션 관리 방법
     
         asyncpg.Connection.prepare = _asyncpg_prepare
 
@@ -58,12 +58,12 @@ class DbConn:
                 autoflush=False,
                 expire_on_commit=False,
             ),
-            scopefunc=lambda: AppCtx.current.id,
+            scopefunc=lambda: AppCtx.current.id,  # session 발급 단위 (lambda: 익명함수)
         )
-    
+
     @property
     def session(self) -> AsyncSession:
         return self._scoped_session()
 
     async def clear_scoped_session(self) -> None:
-        await self._scoped_session.remove()
+        await self._scoped_session.remove()  # 8

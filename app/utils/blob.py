@@ -5,18 +5,15 @@ import io
 from concurrent.futures import ThreadPoolExecutor
 from botocore.exceptions import ClientError
 from app.utils.misc import get_random_string
+from app.utils.ctx import AppCtx
 
 
 _executor = ThreadPoolExecutor(10)
-
-def get_blob_client() -> S3Client:
-    return Session().client("s3")
 
 
 DEFAULT_BUCKET_NAME = "fastapi-practice"
 
 async def upload_image(
-    blob_client: S3Client,
     user_id: int,
     file_name: str,
     file_obj: io.BytesIO,
@@ -30,7 +27,7 @@ async def upload_image(
     try:
         await loop.run_in_executor(  
             _executor,
-            blob_client.upload_fileobj,  # sync
+            AppCtx.current.s3.upload_fileobj,
             file_obj,
             DEFAULT_BUCKET_NAME,
             attachment_file_key,
