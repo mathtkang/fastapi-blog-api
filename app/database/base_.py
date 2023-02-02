@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import Column, FetchedValue, Sequence
-from sqlalchemy.sql import sqltypes
 from sqlalchemy import text as sql_text
 from sqlalchemy import Column, TIMESTAMP
 from sqlalchemy.orm import object_session
@@ -14,24 +13,8 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm.session import Session
 
 
-# orm 매핑 함수 선언
+# ModelMeta 사용하려면, alembic > env.py 에서 설정 해줘야함
 ModelMeta: DeclarativeMeta = declarative_base()
-
-
-'''
-(models.py -> base)
-created_at = Column(
-    TIMESTAMP(timezone=True),
-    server_default=sql_text("CURRENT_TIMESTAMP"),
-    nullable=False,
-)
-updated_at = Column(
-    TIMESTAMP(timezone=True),
-    nullable=False,
-    server_default=sql_text("CURRENT_TIMESTAMP"),
-    server_onupdate=FetchedValue(),
-)
-'''
 
 
 class ModelBase(ModelMeta):
@@ -40,17 +23,6 @@ class ModelBase(ModelMeta):
     __table__: Table
     metadata: MetaData
 
-    # created = Column(
-    #     sqltypes.TIMESTAMP(timezone=True),
-    #     server_default=sql_text("CURRENT_TIMESTAMP"),
-    #     nullable=False,
-    # )
-    # updated = Column(
-    #     sqltypes.TIMESTAMP(timezone=True),
-    #     server_default=sql_text("CURRENT_TIMESTAMP"),
-    #     nullable=False,
-    #     server_onupdate=FetchedValue(),
-    # )
     created_at = Column(
         TIMESTAMP(timezone=True),
         server_default=sql_text("CURRENT_TIMESTAMP"),
