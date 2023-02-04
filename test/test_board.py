@@ -51,25 +51,3 @@ class TestBoard:
     @pytest.mark.asyncio
     async def test_delete_board(app_client: AsyncClient):
         pass
-
-
-
-    # @pytest.mark.asyncio
-    # async def test_create_board():
-    #     async with AsyncClient(base_url="http://127.0.0.1:8000/test") as ac:
-    #         response = await ac.post(
-    #             "/boards/",
-    #             content=json.dumps(
-    #                 {
-    #                     "id": "1",
-    #                     "title": "create a board",
-    #                     "description": "This test_api is created to board",
-    #                 }
-    #             ),
-    #         )
-    #         assert response.status_code == 200
-    #         assert response.json() == {
-    #             "id": "1",
-    #             "title": "create a board",
-    #             "description": "This test_api is created to board",
-    #         }
