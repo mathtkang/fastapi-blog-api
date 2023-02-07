@@ -20,7 +20,7 @@ def create_app(app_settings: AppSettings) -> FastAPI:
     )
     app.add_event_handler("shutdown", functools.partial(_web_app_shutdown, app))
 
-    # 라우터 정의
+    # router Definition
     for api_router in API_ROUTERS:
         app.include_router(api_router)
 
