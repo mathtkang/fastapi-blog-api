@@ -36,7 +36,7 @@ def upgrade() -> None:
     )
     op.create_table('board',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('title', sa.String(length=150), nullable=False),
+    sa.Column('title', sa.String(length=150), nullable=False, unique=True),
     sa.Column('written_user_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
