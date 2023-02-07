@@ -2,7 +2,7 @@
 name = "fastapi-practice"
 version = "0.1.0"
 description = ""
-authors = ["강석영 <ksge1124@gmail.com>"]
+authors = ["sgaeng <ksge1124@gmail.com>"]
 readme = "README.md"
 packages = [{include = "fastapi_practice"}]
 

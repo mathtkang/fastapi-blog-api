@@ -1,20 +1,41 @@
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-from pydantic import BaseModel
+import re
+from pydantic import BaseModel, Field
 from sqlalchemy.sql import expression as sql_exp
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
 import jwt, time
 from app.database import models as m
 from app.utils.auth import generate_hashed_password, validate_hashed_password
 from app.utils.ctx import AppCtx
+import dotenv
+import os
+
+
+dotenv_file = dotenv.find_dotenv()
+dotenv.load_dotenv(dotenv_file)
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+PASSWORD_REGEX = (
+    r'^('
+    r'(?=.*{letters})(?=.*{digits})(?=.*{specials})'
+    r'|(?=.*{letters})(?=.*{digits})'
+    r'|(?=.*{letters})(?=.*{specials})'
+    r'|(?=.*{digits})(?=.*{specials})'
+    r').{{8,}}$'
+).format(
+    letters='[a-zA-Z]',
+    digits='[0-9]',
+    specials='''[~`!@#$%^&*()=+[{\]}\\|;:'",<.>/?_-]''',
+)
+
+
 class AuthSignupRequest(BaseModel):
     email: str
-    password: str
+    password: str = Field(regex=PASSWORD_REGEX)
 
 
 @router.post("/signup")
@@ -59,9 +80,9 @@ async def login(q: AuthSignupRequest):
             "_id": user.id,
             "iat": int(time.time()),
             "iss": "fastapi-practice",
-            "exp": int(time.time()) + 60 * 60 * 24,  # 알아서 검증
+            "exp": int(time.time()) + 60 * 60 * 24,
         },
-        key="secret",
+        key=os.environ["SECRET_KEY"],  # .env
     )
 
     return LoginResponse(access_token=access_token)
