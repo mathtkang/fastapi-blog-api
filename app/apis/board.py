@@ -48,6 +48,7 @@ async def get_board(
 class SearchBoardRequest(BaseModel):
     # filter (query parameters)
     written_user_id: int | None
+    title: str | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
         "written_user_id"
@@ -71,6 +72,9 @@ async def search_board(
 
     if q.written_user_id is not None:
         board_query = board_query.where(m.Board.written_user_id == q.written_user_id)
+
+    if q.title is not None:
+        board_query = board_query.where(m.Board.title.ilike(q.title))
 
     board_cnt: int = await AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(board_query)
@@ -108,6 +112,7 @@ async def create_board(
     board = m.Board(
         title=q.title,
     )
+    # TODO: board title unique (alembic revision --autogenerate)
 
     AppCtx.current.db.session.add(board)
     await AppCtx.current.db.session.commit()

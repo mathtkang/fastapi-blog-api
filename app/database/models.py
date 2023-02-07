@@ -34,9 +34,8 @@ class UserRoleEnum(int, enum.Enum):
 class Board(Base):
     __tablename__ = "board"
 
-
     id = Column(Integer, primary_key=True)
-    title = Column(String(150), nullable=False)
+    title = Column(String(150), nullable=False, unique=True)
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
     written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
@@ -66,7 +65,7 @@ class Post(Base):
     content = Column(Text, nullable=True, default=None)
     like_cnt: ColumnProperty
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
-    written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
+    written_user = relationship("User", uselist=False)  # relationship: orm 에서만, db에 들어가지 않음
     board_id = Column(Integer, ForeignKey("board.id"), index=True)
     board = relationship("Board", uselist=False)
     likes = relationship("Like", uselist=True, back_populates="post", cascade="all")
