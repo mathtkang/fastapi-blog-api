@@ -24,11 +24,14 @@ async def app_client(app_settings: AppSettings) -> AsyncIterator[AsyncClient]:
 
 @pytest_asyncio.fixture(scope="class")
 async def user_access_token(app_client: AsyncClient) -> str:
-    resp = await app_client.post(
-        '/auth/login',
+    response = await app_client.post(
+        "/auth/login",
         json={
             "email": DEFAULT_USER_EMAIL,
             "password": DEFAULT_USER_PASSWORD,
         },
     )
-    return resp.json()['access_token']  # body에 담긴 값을 json으로 인식, dict 형으로 반환
+
+    assert response.status_code == 200
+    
+    return response.json()['access_token']  # body에 담긴 값을 json으로 인식, dict 형으로 반환
