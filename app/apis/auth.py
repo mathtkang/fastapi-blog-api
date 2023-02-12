@@ -51,7 +51,10 @@ async def signup(q: AuthSignupRequest):
             status_code=HTTP_409_CONFLICT, detail="Email already exists"
         )
 
-    user = m.User(email=q.email, password=generate_hashed_password(q.password))
+    user = m.User(
+        email=q.email, 
+        password= await generate_hashed_password(q.password)
+    )
 
     AppCtx.current.db.session.add(user)
     await AppCtx.current.db.session.commit()
@@ -82,7 +85,7 @@ async def login(q: AuthSignupRequest):
             "iss": "fastapi-practice",
             "exp": int(time.time()) + 60 * 60 * 24,
         },
-        key=os.environ["SECRET_KEY"],  # .env
+        key=os.environ["SECRET_KEY"],
     )
 
     return LoginResponse(access_token=access_token)
