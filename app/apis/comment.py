@@ -48,6 +48,7 @@ class SearchCommentRequest(BaseModel):
     parent_comment_id: int | None
     written_user_id: int | None
     post_id: int | None
+    content: str | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
         "written_user_id"
@@ -73,10 +74,13 @@ async def search_comments(
         comment_query = comment_query.where(
             m.Comment.parent_comment_id == q.parent_comment_id
         )
-    if q.user_id is not None:
+    if q.written_user_id is not None:
         comment_query = comment_query.where(m.Comment.user_id == q.written_user_id)
     if q.post_id is not None:
         comment_query = comment_query.where(m.Comment.post_id == q.post_id)
+    if q.content is not None:
+        comment_query = comment_query.where(m.Comment.content.ilike(q.content))
+
 
     comment_cnt: int = AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(comment_query)
@@ -104,8 +108,11 @@ async def search_comments(
 
 
 class PostCommentRequest(BaseModel):
-    content: str | None
-    parent_comment_id: int | None = Field(default=None)
+    content: str
+    parent_comment_id: int | None
+
+class PostCommentResponse(BaseModel):
+    comment_id: int
 
 
 @router.post("/")
@@ -123,6 +130,8 @@ async def create_comment(
 
     AppCtx.current.db.session.add(comment)
     await AppCtx.current.db.session.commit()
+
+    return PostCommentResponse(comment_id=comment.id)
 
 
 @router.put("/{comment_id:int}")

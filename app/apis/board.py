@@ -18,7 +18,7 @@ class GetBoardResponse(BaseModel):
     title: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    written_user_id: int
+    written_user_id: int | None
 
     class Config:
         orm_mode = True
@@ -40,7 +40,7 @@ async def get_board(
     )
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
 
     return GetBoardResponse.from_orm(board)
 
@@ -72,7 +72,6 @@ async def search_board(
 
     if q.written_user_id is not None:
         board_query = board_query.where(m.Board.written_user_id == q.written_user_id)
-
     if q.title is not None:
         board_query = board_query.where(m.Board.title.ilike(q.title))
 
@@ -102,6 +101,10 @@ class PostBoardRequest(BaseModel):
     title: str
 
 
+class PostBoardResponse(BaseModel):
+    board_id: int
+
+
 @router.post("/")
 async def create_board(
     q: PostBoardRequest,
@@ -111,11 +114,13 @@ async def create_board(
 
     board = m.Board(
         title=q.title,
+        written_user_id=user_id,
     )
-    # TODO: board title unique (alembic revision --autogenerate)
 
     AppCtx.current.db.session.add(board)
     await AppCtx.current.db.session.commit()
+
+    return PostBoardResponse(board_id=board.id)
 
 
 @router.put("/{board_id:int}")
