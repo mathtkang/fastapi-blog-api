@@ -8,7 +8,7 @@ import re
 from typing import Literal
 from sqlalchemy.sql import func as sql_func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from app.utils.auth import resolve_access_token
+from app.utils.auth import resolve_access_token, validate_user_role
 from app.database import models as m
 from app.utils.ctx import AppCtx
 
@@ -53,6 +53,7 @@ class SearchPostRequest(BaseModel):
     like_user_id: int | None
     written_user_id: int | None
     board_id: int | None
+    title: str | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
         "written_user_id"
@@ -82,6 +83,8 @@ async def search_post(
         post_query = post_query.where(m.Post.written_user_id == q.written_user_id)
     if q.board_id is not None:
         post_query = post_query.where(m.Post.board_id == q.board_id)
+    if q.title is not None:
+        post_query = post_query.where(m.Post.title.ilike(q.title))
 
     post_cnt: int = await AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(post_query)
@@ -127,9 +130,11 @@ class PostPostRequest(BaseModel):
 
 @router.post("/")
 async def create_post(
-    q: PostPostRequest,
+    q: PostPostRequest = Depends(),
     user_id: int = Depends(resolve_access_token),
 ):
+    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+
     post = m.Post(
         title=q.title,
         content=q.content,
@@ -163,38 +168,37 @@ async def create_post(
     [아래 1,2 코드의 문제점]
     1. 너무 느림(전체를 다 탐색하면 안됨)
     모든 태그 비교가 아닌, 새롭게 받은 태그를 db와 비교해서 insert+update 를 해줘야한다.
+
+    [처음 작성한 코드1]
+    exist_hashtags: list[m.Hashtag] = (
+        session.execute(
+            sql_exp.select(m.Hashtag).where(m.Hashtag.name.in_(new_hashtags))
+        )
+        .scalars()
+        .all()
+    )
+
+    for new_tag in new_hashtags:
+        for exist_tag in exist_hashtags:
+            if new_tag == exist_tag.name:
+                continue
+            tag = m.Hashtag(name=new_tag)
+            session.add(tag)
+    session.commit()
+
+    [처음 작성한 코드2]
+    for new_tag in new_hashtags:
+        hashtag: m.Hashtag = session.execute(
+            sql_exp.select(m.Hashtag).where(m.Hashtag.name == new_tag)
+        ).scalar_one_or_none()
+
+        if hashtag is not None:  # 기존에 같은 태그가 존재하면
+            continue
+
+        tag = m.Hashtag(name=new_tag)
+        session.add(tag)
+        session.commit()
     """
-
-    # [처음 작성한 코드1]
-    # exist_hashtags: list[m.Hashtag] = (
-    #     session.execute(
-    #         sql_exp.select(m.Hashtag).where(m.Hashtag.name.in_(new_hashtags))
-    #     )
-    #     .scalars()
-    #     .all()
-    # )
-
-    # for new_tag in new_hashtags:
-    #     for exist_tag in exist_hashtags:
-    #         if new_tag == exist_tag.name:
-    #             continue
-    #         tag = m.Hashtag(name=new_tag)
-    #         session.add(tag)
-    # session.commit()
-
-    # [처음 작성한 코드2]
-    # for new_tag in new_hashtags:
-    #     hashtag: m.Hashtag = session.execute(
-    #         sql_exp.select(m.Hashtag).where(m.Hashtag.name == new_tag)
-    #     ).scalar_one_or_none()
-
-    #     if hashtag is not None:  # 기존에 같은 태그가 존재하면
-    #         continue
-
-    #     tag = m.Hashtag(name=new_tag)
-    #     session.add(tag)
-    #     session.commit()
-
 
 @router.put("/{post_id:int}")
 async def update_post(
@@ -202,6 +206,8 @@ async def update_post(
     q: PostPostRequest,
     user_id: int = Depends(resolve_access_token),
 ):
+    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+
     post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )
@@ -226,6 +232,8 @@ async def delete_post(
     post_id: int,
     user_id: int = Depends(resolve_access_token),
 ):
+    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+
     post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )

@@ -3,7 +3,7 @@ from test.constants import DEFAULT_USER_EMAIL, DEFAULT_USER_PASSWORD
 
 
 async def create_user(app_client: AsyncClient) -> None:
-    resp = await app_client.post(
+    response = await app_client.post(
         '/auth/signup',
         json={
             "email": DEFAULT_USER_EMAIL,
@@ -11,4 +11,4 @@ async def create_user(app_client: AsyncClient) -> None:
         },
     )
 
-    assert resp.status_code == 200
+    assert response.status_code == 200
