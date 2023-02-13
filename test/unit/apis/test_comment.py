@@ -6,9 +6,9 @@ from test.helper import with_app_ctx, ensure_fresh_env
 from test.mock.user import create_user
 from test.utils import search_board, search_post, search_comment
 
-COMMENT_CONTENT="This is a comment content for the test"
-POST_TITLE="This is a post title for the test"
-
+COMMENT_CONTENT="This is a comment content for the test."
+UPDATED_COMMENT_CONTENT="This is a updated comment content for the test."
+POST_TITLE="This is a post title for the test."
 
 class TestComment:
     @pytest_asyncio.fixture(scope="class", autouse=True)
@@ -27,23 +27,32 @@ class TestComment:
         post_id = (
             await search_post(app_client, POST_TITLE)
         )['id']
-        parent_comment_id = ""
 
         response = await app_client.post(
             f"/posts/{post_id}/comments/",
             json={
                 "content": COMMENT_CONTENT,
-                "parent_comment_id": parent_comment_id,  # question: 이걸 어디서 받아오나,,?
             },
             headers={
                 "Authorization": f"Bearer {user_access_token}"
             }
         )
-
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success created comment"
-        }
+
+        parent_comment_id = response.json()['id']
+        
+        response = await app_client.post(
+            f"/posts/{post_id}/comments/",
+            json={
+                "content": COMMENT_CONTENT,
+                "parent_comment_id": parent_comment_id,
+            },
+            headers={
+                "Authorization": f"Bearer {user_access_token}"
+            }
+        )
+        assert response.status_code == 200
+
 
 
     @pytest.mark.asyncio
@@ -54,10 +63,6 @@ class TestComment:
         comment_id = (
             await search_comment(app_client, COMMENT_CONTENT)
         )['id']
-
-        # question -> parent_comment_id 가 존재하면
-        # if comment_id == 
-            # comment_id = 
 
         response = await app_client.get(
             f"/posts/{post_id}/comments/{comment_id}",
@@ -76,13 +81,11 @@ class TestComment:
         comment_id = (
             await search_comment(app_client, COMMENT_CONTENT)
         )['id']
-        parent_comment_id = ""  # question
 
         response = await app_client.post(
             f"/posts/{post_id}/comments/{comment_id}",
             json={
-                "content": COMMENT_CONTENT,
-                "parent_comment_id": parent_comment_id,  # question
+                "content": UPDATED_COMMENT_CONTENT
             },
             headers={
                 "Authorization": f"Bearer {user_access_token}"
@@ -90,9 +93,6 @@ class TestComment:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success updated comment"
-        }
 
 
     @pytest.mark.asyncio
@@ -111,6 +111,3 @@ class TestComment:
             }
         )
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success deleted comment"
-        }
