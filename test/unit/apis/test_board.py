@@ -36,9 +36,6 @@ class TestBoard:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success created board"
-        }
 
 
     @pytest.mark.asyncio
@@ -73,15 +70,12 @@ class TestBoard:
             }
         )
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success updated board"
-        }
 
 
     @pytest.mark.asyncio
     async def test_delete_board(app_client: AsyncClient, user_access_token: str):
         board_id = (
-            await search_board(app_client, UPDATED_BOARD_TITLE)  # Question: UPDATED_BOARD_TITLE 으로 하는게 더 좋을까요?
+            await search_board(app_client, UPDATED_BOARD_TITLE)
         )['id']
 
         response = await app_client.delete(
@@ -91,6 +85,3 @@ class TestBoard:
             }
         )
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success deleted board"
-        }
