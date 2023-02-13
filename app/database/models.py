@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, TIME
 from sqlalchemy import text as sql_text
 from sqlalchemy import orm as sql_orm
 from sqlalchemy.schema import FetchedValue
-from sqlalchemy.orm import ColumnProperty, column_property, relationship, backref
+from sqlalchemy.orm import ColumnProperty, relationship, backref
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy.sql import func as sa_func
 from sqlalchemy.ext.declarative import declarative_base
@@ -36,7 +36,7 @@ class Board(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String(150), nullable=False, unique=True)
-    written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
+    written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
     written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
     created_at = Column(
@@ -64,7 +64,7 @@ class Post(Base):
     title = Column(String(150), nullable=False)
     content = Column(Text, nullable=True, default=None)
     like_cnt: ColumnProperty
-    written_user_id = Column(Integer, ForeignKey("user.id"), index=True)
+    written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
     written_user = relationship("User", uselist=False)  # relationship: orm 에서만, db에 들어가지 않음
     board_id = Column(Integer, ForeignKey("board.id"), index=True)
     board = relationship("Board", uselist=False)
@@ -127,7 +127,7 @@ class Comment(Base):
     __tablename__ = "comment"
 
     id = Column(Integer, primary_key=True)
-    content = Column(Text, nullable=True, default=None)
+    content = Column(Text, nullable=False, default=None)
     user_id = Column(Integer, ForeignKey("user.id"), index=True)
     user = relationship("User", uselist=False)
     post_id = Column(Integer, ForeignKey("post.id"), index=True)
