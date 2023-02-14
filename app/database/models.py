@@ -8,7 +8,8 @@ from sqlalchemy.orm import ColumnProperty, relationship, backref
 from sqlalchemy.sql import expression as sa_exp
 from sqlalchemy.sql import func as sa_func
 from sqlalchemy.ext.declarative import declarative_base
-
+from app.utils.blob import get_image_url
+import asyncio
 
 from .base_ import ModelBase
 
@@ -37,7 +38,7 @@ class Board(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String(150), nullable=False, unique=True)
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
-    written_user = relationship("User", uselist=False)  # orm 에서만, db에 들어가지 않음
+    written_user = relationship("User", uselist=False)  # relationship: orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
     created_at = Column(
         TIMESTAMP(timezone=True),
@@ -65,7 +66,7 @@ class Post(Base):
     content = Column(Text, nullable=True, default=None)
     like_cnt: ColumnProperty
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
-    written_user = relationship("User", uselist=False)  # relationship: orm 에서만, db에 들어가지 않음
+    written_user = relationship("User", uselist=False)
     board_id = Column(Integer, ForeignKey("board.id"), index=True)
     board = relationship("Board", uselist=False)
     likes = relationship("Like", uselist=True, back_populates="post", cascade="all")
@@ -112,6 +113,14 @@ class User(Base):
         server_default=sql_text("CURRENT_TIMESTAMP"),
         server_onupdate=FetchedValue(),
     )
+    @property
+    def profile_file_url(self) -> str | None:
+        if self.profile_file_key is None:
+            return None
+        
+        return asyncio.run(
+            get_image_url(self.profile_file_key)
+        )
 
 
 class Like(Base):
@@ -128,8 +137,8 @@ class Comment(Base):
 
     id = Column(Integer, primary_key=True)
     content = Column(Text, nullable=False, default=None)
-    user_id = Column(Integer, ForeignKey("user.id"), index=True)
-    user = relationship("User", uselist=False)
+    written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
+    written_user = relationship("User", uselist=False)
     post_id = Column(Integer, ForeignKey("post.id"), index=True)
     post = relationship("Post", uselist=False)
     parent_comment_id = Column(Integer, ForeignKey("comment.id"), index=True)
