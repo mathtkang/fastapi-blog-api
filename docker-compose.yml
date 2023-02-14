@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:latest
     environment:
-      - POSTGRES_DB=practice
+      - POSTGRES_DB=fastapi-practice
       - POSTGRES_USER=practice
       - POSTGRES_PASSWORD=devpassword
     volumes:
