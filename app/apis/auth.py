@@ -33,13 +33,13 @@ PASSWORD_REGEX = (
 )
 
 
-class AuthSignupRequest(BaseModel):
+class AuthRequest(BaseModel):
     email: str
     password: str = Field(regex=PASSWORD_REGEX)
 
 
 @router.post("/signup")
-async def signup(q: AuthSignupRequest):
+async def signup(q: AuthRequest):
     """
     This is the endpoint for the login page.
     """
@@ -65,7 +65,7 @@ class LoginResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(q: AuthSignupRequest):
+async def login(q: AuthRequest):
     user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.email == q.email)
     )
