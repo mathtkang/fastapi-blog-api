@@ -16,11 +16,11 @@ router = APIRouter(prefix="/posts/{post_id:int}/comments", tags=["comments"])
 class GetCommentResponse(BaseModel):
     id: int
     content: str | None
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
-    user_id: int
+    written_user_id: int
     post_id: int
     parent_comment_id: int | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
 
     class Config:
         orm_mode = True
@@ -45,10 +45,10 @@ async def get_comment(
 
 class SearchCommentRequest(BaseModel):
     # filter (query parameters)
-    parent_comment_id: int | None
-    written_user_id: int | None
-    post_id: int | None
     content: str | None
+    post_id: int | None
+    written_user_id: int | None
+    parent_comment_id: int | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
         "written_user_id"
@@ -75,12 +75,11 @@ async def search_comments(
             m.Comment.parent_comment_id == q.parent_comment_id
         )
     if q.written_user_id is not None:
-        comment_query = comment_query.where(m.Comment.user_id == q.written_user_id)
+        comment_query = comment_query.where(m.Comment.written_user_id == q.written_user_id)
     if q.post_id is not None:
         comment_query = comment_query.where(m.Comment.post_id == q.post_id)
     if q.content is not None:
         comment_query = comment_query.where(m.Comment.content.ilike(q.content))
-
 
     comment_cnt: int = AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(comment_query)
@@ -89,7 +88,7 @@ async def search_comments(
     sort_by_column = {
         "created_at": m.Comment.created_at,
         "updated_at": m.Comment.updated_at,
-        "written_user_id": m.Comment.user_id,
+        "written_user_id": m.Comment.written_user_id,
     }[q.sort_by]
     sort_exp = {
         "asc": sort_by_column.asc(),
@@ -109,7 +108,7 @@ async def search_comments(
 
 class PostCommentRequest(BaseModel):
     content: str
-    parent_comment_id: int | None
+    parent_comment_id: int | None  # optional
 
 class PostCommentResponse(BaseModel):
     comment_id: int
@@ -123,7 +122,7 @@ async def create_comment(
 ):
     comment = m.Comment(
         post_id=post_id,
-        user_id=user_id,
+        written_user_id=user_id,
         content=q.content,
         parent_comment_id=q.parent_comment_id,
     )
@@ -149,7 +148,7 @@ async def update_comment(
     if comment is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="comment not found")
 
-    if comment.user_id != user_id:
+    if comment.written_user_id != user_id:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
         )
@@ -174,7 +173,7 @@ async def delete_comment(
     if comment is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="comment not found")
 
-    if comment.user_id != user_id:
+    if comment.written_user_id != user_id:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
         )
