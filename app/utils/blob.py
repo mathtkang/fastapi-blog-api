@@ -12,6 +12,7 @@ _executor = ThreadPoolExecutor(10)
 
 
 DEFAULT_BUCKET_NAME = "fastapi-practice"
+A_ONE_DAY=60 * 60 * 24
 
 async def upload_image(
     user_id: int,
@@ -31,9 +32,28 @@ async def upload_image(
             file_obj,
             DEFAULT_BUCKET_NAME,
             attachment_file_key,
-            {"ContentType": f"image/{ext_name}"},
+            {
+                "ContentType": f"image/{ext_name}"
+            },
         )
     except ClientError as err:
         raise RuntimeError("AWS s3 does not response", err)
 
     return attachment_file_key
+
+
+async def get_image_url(
+    img_file_key,
+) -> str:
+    loop = asyncio.get_running_loop()
+    
+    return await loop.run_in_executor(
+        _executor,
+        AppCtx.current.s3.generate_presigned_url,
+        "get_object",
+        Params={
+            "Bucket": DEFAULT_BUCKET_NAME,
+            "Key": img_file_key,
+        },
+        ExpiresIn=A_ONE_DAY,
+    )

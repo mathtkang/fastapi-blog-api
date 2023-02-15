@@ -127,10 +127,13 @@ class PostPostRequest(BaseModel):
     content: str
     board_id: int
 
+class PostPostResponse(BaseModel):
+    post_id: int
+
 
 @router.post("/")
 async def create_post(
-    q: PostPostRequest = Depends(),
+    q: PostPostRequest,
     user_id: int = Depends(resolve_access_token),
 ):
     validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
@@ -144,6 +147,7 @@ async def create_post(
 
     AppCtx.current.db.session.add(post)
 
+    # create hashtag
     content = q.content
     pattern = "#([0-9a-zA-Z가-힣]*)"
     hashtags = re.compile(pattern).findall(content)  # type: list
@@ -163,6 +167,8 @@ async def create_post(
     """
 
     await AppCtx.current.db.session.commit()
+
+    return PostPostResponse(post_id=post.id)
 
     """
     [아래 1,2 코드의 문제점]

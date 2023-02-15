@@ -9,6 +9,10 @@ from starlette.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN
 )
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from app.utils.ctx import AppCtx
+
 
 _PBKDF2_HASH_NAME = "SHA256"
 _PBKDF2_ITERATIONS = 100_000
@@ -21,31 +25,56 @@ class AuthUtilError(Exception):
     message: str
 
 
-def generate_hashed_password(password: str) -> str:
-    pbkdf2_salt = os.urandom(16)
-    pw_hash = hashlib.pbkdf2_hmac(
-        _PBKDF2_HASH_NAME,  #hash_name
-        password.encode("utf-8"),  #password
-        pbkdf2_salt,  #salt
-        _PBKDF2_ITERATIONS,  # iterations
+_executor = ThreadPoolExecutor(10)
+
+
+# DONE: sync to async
+async def generate_hashed_password(password: str) -> str:
+    def _inner(password: str) -> str:
+        pbkdf2_salt = os.urandom(16)
+        pw_hash = hashlib.pbkdf2_hmac(
+            _PBKDF2_HASH_NAME,  #hash_name
+            password.encode("utf-8"),  #password
+            pbkdf2_salt,  #salt
+            _PBKDF2_ITERATIONS,  # iterations
+        )
+        
+        return "%s:%s" % (
+            binascii.hexlify(pbkdf2_salt).decode("utf-8"),  # sep: str | bytes
+            binascii.hexlify(pw_hash).decode("utf-8"),
+        )
+
+    loop = asyncio.get_running_loop()
+
+    return await loop.run_in_executor(
+        _executor, 
+        _inner, 
+        password
     )
-    return "%s:%s" % (
-        binascii.hexlify(pbkdf2_salt).decode("utf-8"),  # sep: str | bytes
-        binascii.hexlify(pw_hash).decode("utf-8"),
+
+
+
+async def validate_hashed_password(password: str, hashed_password: str) -> bool:
+    def _inner(password: str, hashed_password: str) -> bool:
+        pbkdf2_salt_hex, pw_hash_hex = hashed_password.split(":")
+
+        pw_challenge = hashlib.pbkdf2_hmac(
+            _PBKDF2_HASH_NAME,  #hash_name
+            password.encode("utf-8"),  #password
+            binascii.unhexlify(pbkdf2_salt_hex),  #salt
+            _PBKDF2_ITERATIONS,  # iterations
+        )
+
+        return pw_challenge == binascii.unhexlify(pw_hash_hex)
+
+    loop = asyncio.get_running_loop()
+
+    return await loop.run_in_executor(
+        _executor, 
+        _inner, 
+        password, 
+        hashed_password,
     )
-
-
-def validate_hashed_password(password: str, hashed_password: str) -> bool:
-    pbkdf2_salt_hex, pw_hash_hex = hashed_password.split(":")
-
-    pw_challenge = hashlib.pbkdf2_hmac(
-        _PBKDF2_HASH_NAME,  #hash_name
-        password.encode("utf-8"),  #password
-        binascii.unhexlify(pbkdf2_salt_hex),  #salt
-        _PBKDF2_ITERATIONS,  # iterations
-    )
-
-    return pw_challenge == binascii.unhexlify(pw_hash_hex)
 
 
 def validate_access_token(access_token: str) -> int:
@@ -83,14 +112,15 @@ def validate_access_token(access_token: str) -> int:
     
     return user_id
 
+
 def resolve_access_token(
     credentials: HTTPAuthorizationCredentials = Depends(user_auth_scheme)
 ) -> int:
     return validate_access_token(credentials.credentials)
 
 
-async def validate_user_role(user_id: int, role: m.UserRoleEnum, session: Session):
-    user: m.User | None = await session.scalar(
+async def validate_user_role(user_id: int, role: m.UserRoleEnum):  # question: 3번째 파라미터로 session 안 받아도 되나요? (user.py > def get_user())
+    user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
 
