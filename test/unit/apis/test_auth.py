@@ -1,19 +1,45 @@
-from fastapi.testclient import TestClient
-
 import pytest_asyncio
 import pytest
-import json
 from httpx import AsyncClient
-from app.apis.board import router
 from app.settings import AppSettings
-from ...helper import with_app_ctx, ensure_fresh_env
-
-# Test the user registration endpoint - POST /auth/signup
-def test_signup(app_client: AsyncClient):    
-    pass
-    
+from test.helper import with_app_ctx, ensure_fresh_env
+from test.mock.user import create_user
 
 
-# Test the user login endpoint - POST /auth/login
-def test_login(client: TestClient):
-    pass
+EMAIL="user@example.com"
+PASSWORD="password1234!"
+
+class TestAuth:
+    @pytest_asyncio.fixture(scope="class", autouse=True)
+    async def _init_env(
+        self,
+        app_client: AsyncClient,
+        app_settings: AppSettings,
+    ) -> None:
+        async with with_app_ctx(app_settings):
+            await ensure_fresh_env()
+            await create_user(app_client)
+
+
+    @pytest.mark.asyncio
+    async def test_signup(app_client: AsyncClient):
+        response = await app_client.post(
+            "/auth/signup",
+            json={
+                "email": EMAIL,
+                "password": PASSWORD,
+            },
+        )
+        assert response.status_code == 200
+
+
+    @pytest.mark.asyncio
+    async def test_login(app_client: AsyncClient):
+        response = await app_client.post(
+            "/auth/login",
+            json={
+                "email": EMAIL,
+                "password": PASSWORD,
+            },
+        )
+        assert response.status_code == 200
