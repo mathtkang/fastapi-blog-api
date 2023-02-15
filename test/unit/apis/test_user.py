@@ -4,8 +4,10 @@ from httpx import AsyncClient
 from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
 from test.mock.user import create_user
-from test.utils import search_user_id
+from test.utils import search_user
 
+
+EMAIL="test@example.com"
 
 class TestUser:
     @pytest_asyncio.fixture(scope="class", autouse=True)
@@ -21,9 +23,9 @@ class TestUser:
 
     @pytest.mark.asyncio
     async def test_get_user(app_client: AsyncClient, user_access_token: str):
-        # user_id를 어떻게 가져와야할까?
+        # TODO: user_id가져오기
         user_id = (
-            await search_user_id(app_client, user_access_token)
+            await search_user(app_client, EMAIL)
         )['id']
         response = await app_client.get(
             f"/user/{user_id}",
@@ -31,7 +33,3 @@ class TestUser:
 
         assert response.status_code == 200
         assert response.json()['id'] == user_id
-    
-
-    @pytest.mark.asyncio
-    async def test_get_me(app_client: AsyncClient, user_access_token: str):

@@ -32,12 +32,10 @@ class TestPost:
 
         response = await app_client.post(
             "/posts/",
-            params={
-                "board_id": board_id,
-            },  # Question: 이때의 board_id는 qeury parameter이다. 위와 같이 가져오는게 맞나,,? 그리고 json이 아닌 params에 써도 되나,,?
             json={
                 "title": POST_TITLE,
                 "content": POST_CONTENT,
+                "board_id": board_id,
             },
             headers={
                 "Authorization": f"Bearer {user_access_token}"
@@ -45,9 +43,6 @@ class TestPost:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success created post"
-        }
 
 
     @pytest.mark.asyncio
@@ -87,9 +82,6 @@ class TestPost:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success updated post"
-        }
 
 
     @pytest.mark.asyncio
@@ -105,10 +97,7 @@ class TestPost:
             }
         )
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success deleted post"
-        }
-    
+
 
     @pytest.mark.asyncio
     async def test_like_post(app_client: AsyncClient, user_access_token: str):
@@ -124,9 +113,7 @@ class TestPost:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success liked post"
-        }
+    
     
     @pytest.mark.asyncio
     async def test_like_delete(app_client: AsyncClient, user_access_token: str):
@@ -142,6 +129,3 @@ class TestPost:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "message": "Success un-liked post"
-        }

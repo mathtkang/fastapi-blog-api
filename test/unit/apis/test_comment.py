@@ -45,7 +45,7 @@ class TestComment:
             f"/posts/{post_id}/comments/",
             json={
                 "content": COMMENT_CONTENT,
-                "parent_comment_id": parent_comment_id,
+                "parent_comment_id": parent_comment_id,  # optional
             },
             headers={
                 "Authorization": f"Bearer {user_access_token}"

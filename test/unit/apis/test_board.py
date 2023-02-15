@@ -53,7 +53,6 @@ class TestBoard:
         assert response.json()['title'] == BOARD_TITLE
 
 
-    # DONE: 여기부터
     @pytest.mark.asyncio
     async def test_update_board(app_client: AsyncClient, user_access_token: str):
         board_id = (
