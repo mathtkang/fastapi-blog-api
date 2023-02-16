@@ -1,12 +1,11 @@
 from fastapi import Depends, HTTPException, APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy.sql import expression as sql_exp
 from sqlalchemy.sql import func as sql_func
 from pydantic import BaseModel, Field
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from typing import Literal
-from app.utils.auth import resolve_access_token, validate_user_role
+from app.utils.auth import resolve_access_token
 from app.database import models as m
 from app.utils.ctx import AppCtx
 

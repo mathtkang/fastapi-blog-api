@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession as Session
 import re
 from pydantic import BaseModel, Field
 from sqlalchemy.sql import expression as sql_exp
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
+from starlette.status import HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
 import jwt, time
 from app.database import models as m
 from app.utils.auth import generate_hashed_password, validate_hashed_password
@@ -48,7 +48,7 @@ async def signup(q: AuthRequest):
     )
     if is_email_exist:
         raise HTTPException(
-            status_code=HTTP_409_CONFLICT, detail="Email already exists"
+            status_code=HTTP_409_CONFLICT, detail="Your email already exists."
         )
 
     user = m.User(
@@ -75,7 +75,7 @@ async def login(q: AuthRequest):
 
     if not validate_hashed_password(q.password, user.password):
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST, detail="password is wrong"
+            status_code=HTTP_400_BAD_REQUEST, detail="Your password is incorrect."
         )
 
     access_token = jwt.encode(

@@ -1,9 +1,8 @@
 from fastapi import Depends, HTTPException, APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from typing import Literal
 from sqlalchemy.sql import func as sql_func
 from app.utils.auth import resolve_access_token, validate_user_role
@@ -40,7 +39,7 @@ async def get_board(
     )
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Board ID as {board_id} is not found.")
 
     return GetBoardResponse.from_orm(board)
 
@@ -62,6 +61,7 @@ class SearchBoardRequest(BaseModel):
 class SearchBoardResponse(BaseModel):
     boards: list[GetBoardResponse]
     count: int
+    message: str | None
 
 
 @router.post("/search")
@@ -91,10 +91,17 @@ async def search_board(
 
     boards = (await AppCtx.current.db.session.scalars(board_query)).all()
 
-    return SearchBoardResponse(
-        boards=[GetBoardResponse.from_orm(board) for board in boards],
-        count=board_cnt,
-    )
+    if board_cnt == 0:
+        return SearchBoardResponse(
+            boards=[GetBoardResponse.from_orm(board) for board in boards],
+            count=board_cnt,
+            message="Can't find a board that meets the requirements. Please try again.",
+        )
+    else:
+        return SearchBoardResponse(
+            boards=[GetBoardResponse.from_orm(board) for board in boards],
+            count=board_cnt,
+        )
 
 
 class PostBoardRequest(BaseModel):
@@ -110,12 +117,20 @@ async def create_board(
     q: PostBoardRequest,
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     board = m.Board(
         title=q.title,
         written_user_id=user_id,
     )
+
+    is_title_exist = await AppCtx.current.db.session.scalar(
+        sql_exp.exists().where(m.Board.title == q.title).select()
+    )
+    if is_title_exist:
+        raise HTTPException(
+            status_code=HTTP_409_CONFLICT, detail="This board title already exists."
+        )
 
     AppCtx.current.db.session.add(board)
     await AppCtx.current.db.session.commit()
@@ -129,7 +144,7 @@ async def update_board(
     q: PostBoardRequest,
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     board: m.Board | None = (
         await AppCtx.current.db.session.execute(
@@ -138,7 +153,7 @@ async def update_board(
     ).scalar_one_or_none()
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
 
     board.title = q.title
 
@@ -151,7 +166,7 @@ async def delete_board(
     board_id: int,
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     board: m.Board | None = (
         await AppCtx.current.db.session.execute(
@@ -160,7 +175,7 @@ async def delete_board(
     ).scalar_one_or_none()
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="board not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
 
     await AppCtx.current.db.session.delete(board)
     await AppCtx.current.db.session.commit()
