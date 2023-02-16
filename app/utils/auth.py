@@ -3,7 +3,6 @@ import dataclasses
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends, HTTPException
 from app.database import models as m
-from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy.sql import expression as sql_exp
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
@@ -119,7 +118,7 @@ def resolve_access_token(
     return validate_access_token(credentials.credentials)
 
 
-async def validate_user_role(user_id: int, role: m.UserRoleEnum):  # question: 3번째 파라미터로 session 안 받아도 되나요? (user.py > def get_user())
+async def validate_user_role(user_id: int, role: m.UserRoleEnum):
     user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
