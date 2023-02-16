@@ -84,7 +84,7 @@ class Post(Base):
         server_default=sql_text("CURRENT_TIMESTAMP"),
         server_onupdate=FetchedValue(),
     )
-    # hashtags = relationship("Hasttag", uselist=False, back_populates="post", cascade="all")
+    # hashtags = relationship("Hashtag", uselist=False, back_populates="post", cascade="all")
 
 
 class User(Base):
@@ -100,7 +100,7 @@ class User(Base):
     )
     likes = relationship("Like", uselist=True, back_populates="user", cascade="all")
     comments = relationship(
-        "Comment", uselist=True, back_populates="user", cascade="all"
+        "Comment", uselist=True, back_populates="written_user", cascade="all"
     )
     created_at = Column(
         TIMESTAMP(timezone=True),
@@ -144,7 +144,10 @@ class Comment(Base):
     parent_comment_id = Column(Integer, ForeignKey("comment.id"), index=True)
     # parent_comment = relationship("Comment", uselist=False)
     children_comment = relationship(
-        "Comment", uselist=True, backref=backref("parent_comment", remote_side=[id]), cascade="all"
+        "Comment", 
+        uselist=True, 
+        backref=backref("parent_comment", remote_side=[id]), 
+        cascade="all"
     )
     created_at = Column(
         TIMESTAMP(timezone=True),
