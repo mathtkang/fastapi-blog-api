@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException, APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime
@@ -29,6 +28,7 @@ class GetPostResponse(BaseModel):
         orm_mode = True
 
 
+# DONE
 @router.get("/{post_id}")
 async def get_post(
     post_id: int,
@@ -69,6 +69,7 @@ class SearchPostResponse(BaseModel):
     count: int
 
 
+# DONE
 @router.post("/search")
 async def search_post(
     q: SearchPostRequest,
@@ -131,12 +132,13 @@ class PostPostResponse(BaseModel):
     post_id: int
 
 
+
 @router.post("/")
 async def create_post(
     q: PostPostRequest,
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     post = m.Post(
         title=q.title,
@@ -152,13 +154,13 @@ async def create_post(
     pattern = "#([0-9a-zA-Z가-힣]*)"
     hashtags = re.compile(pattern).findall(content)  # type: list
 
-    await AppCtx.current.db.session.execute(
+    AppCtx.current.db.session.execute(
         pg_insert(m.Hashtag)
         .values([{"name": hashtag} for hashtag in hashtags])
         .on_conflict_do_nothing()  # This is only available with postgresql
     )
     """
-    INSERT INTO hastag
+    INSERT INTO hashtag
     VALUES (name) (
         'code',
         'camp',
@@ -170,60 +172,28 @@ async def create_post(
 
     return PostPostResponse(post_id=post.id)
 
-    """
-    [아래 1,2 코드의 문제점]
-    1. 너무 느림(전체를 다 탐색하면 안됨)
-    모든 태그 비교가 아닌, 새롭게 받은 태그를 db와 비교해서 insert+update 를 해줘야한다.
 
-    [처음 작성한 코드1]
-    exist_hashtags: list[m.Hashtag] = (
-        session.execute(
-            sql_exp.select(m.Hashtag).where(m.Hashtag.name.in_(new_hashtags))
-        )
-        .scalars()
-        .all()
-    )
-
-    for new_tag in new_hashtags:
-        for exist_tag in exist_hashtags:
-            if new_tag == exist_tag.name:
-                continue
-            tag = m.Hashtag(name=new_tag)
-            session.add(tag)
-    session.commit()
-
-    [처음 작성한 코드2]
-    for new_tag in new_hashtags:
-        hashtag: m.Hashtag = session.execute(
-            sql_exp.select(m.Hashtag).where(m.Hashtag.name == new_tag)
-        ).scalar_one_or_none()
-
-        if hashtag is not None:  # 기존에 같은 태그가 존재하면
-            continue
-
-        tag = m.Hashtag(name=new_tag)
-        session.add(tag)
-        session.commit()
-    """
-
+# DONE
 @router.put("/{post_id:int}")
 async def update_post(
     post_id: int,
     q: PostPostRequest,
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     post: m.Post | None = await AppCtx.current.db.session.scalar(
-        sql_exp.select(m.Post).where(m.Post.id == post_id)
+        sql_exp.select(m.Post).where(
+            (m.Post.id == post_id) & (m.Post.board_id == q.board_id)
+        )
     )
 
     if post is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="This post not found.")
 
     if post.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="this is not your post"
+            status_code=HTTP_403_FORBIDDEN, detail="This is not your post."
         )
 
     post.title = q.title
@@ -233,29 +203,36 @@ async def update_post(
     await AppCtx.current.db.session.commit()
 
 
+# DONE
 @router.delete("/{post_id:int}")
 async def delete_post(
     post_id: int,
     user_id: int = Depends(resolve_access_token),
 ):
-    validate_user_role(user_id, m.UserRoleEnum.Admin, AppCtx.current.db.session)
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     post: m.Post | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Post).where(m.Post.id == post_id)
     )
 
     if post is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="This post not found.")
 
     if post.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="this is not your post"
+            status_code=HTTP_403_FORBIDDEN, detail="This is not your post."
         )
 
     await AppCtx.current.db.session.delete(post)
     await AppCtx.current.db.session.commit()
 
 
+class LikeResponse(BaseModel):
+    post_id: int
+    message: str | None
+
+
+# DONE
 @router.post("/{post_id:int}/like")
 async def like_post(
     post_id: int,
@@ -266,7 +243,7 @@ async def like_post(
     )
 
     if post is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="This Post not found.")
 
     like: m.Like | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Like).where(
@@ -275,7 +252,10 @@ async def like_post(
     )
 
     if like is not None:
-        return
+        return LikeResponse(
+            post_id=post_id,
+            message="This post has already been liked."
+        )
 
     like = m.Like(
         post_id=post_id,
@@ -285,7 +265,10 @@ async def like_post(
     AppCtx.current.db.session.add(like)
     await AppCtx.current.db.session.commit()
 
+    return LikeResponse(post_id=like.post_id)
 
+
+# DONE
 @router.delete("/{post_id:int}/like")
 async def like_delete(
     post_id: int,
@@ -296,7 +279,7 @@ async def like_delete(
     )
 
     if post is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="post not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="This Post not found.")
 
     like: m.Like | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Like).where(
@@ -305,7 +288,10 @@ async def like_delete(
     )
 
     if like is None:
-        return
+        return LikeResponse(
+            post_id=post_id,
+            message="This post has already been marked as unliked."
+        )
 
     await AppCtx.current.db.session.delete(like)
     await AppCtx.current.db.session.commit()
