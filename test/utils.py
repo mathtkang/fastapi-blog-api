@@ -1,5 +1,8 @@
 from httpx import AsyncClient
 from typing import Any
+from app.database import models as m
+from app.utils.ctx import AppCtx
+from sqlalchemy.sql import expression as sql_exp
 
 BOARD_TITLE="This is a board title for the test"
 POST_TITLE="This is a post title for the test"
@@ -48,13 +51,19 @@ async def search_comment(
     response = await app_client.post(
         f'/posts/{post_id}/comments/search',
         json={
-            'parent_comment_id': parent_comment_id,
-            'post_id': post_id,
             'content': content,
+            'post_id': post_id,
+            'parent_comment_id': parent_comment_id,
             'offset': 0,
             'count': 1,
         }
     )
 
-async def search_user_id(app_client: AsyncClient, user_access_token: str) -> dict[str, Any]:
+    return response.json()['comments'][0]
+
+
+async def search_user(
+    app_client: AsyncClient, 
+    user_access_token: str
+) -> dict[str, Any]:
     pass
