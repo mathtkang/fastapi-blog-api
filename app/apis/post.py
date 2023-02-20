@@ -55,9 +55,7 @@ class SearchPostRequest(BaseModel):
     board_id: int | None
     title: str | None
     # sort
-    sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
-        "written_user_id"
-    ] = "created_at"
+    sort_by: Literal["created_at"] | Literal["updated_at"] = "created_at"
     sort_direction: Literal["asc"] | Literal["desc"] = "asc"
     # pagination
     offset: int = 0
@@ -67,6 +65,7 @@ class SearchPostRequest(BaseModel):
 class SearchPostResponse(BaseModel):
     posts: list[GetPostResponse]
     count: int
+    message: str | None
 
 
 # DONE
@@ -95,7 +94,6 @@ async def search_post(
     sort_by_column = {
         "created_at": m.Post.created_at,
         "updated_at": m.Post.updated_at,
-        "written_user_id": m.Post.written_user_id,
     }[q.sort_by]
 
     sort_exp = {
@@ -109,7 +107,7 @@ async def search_post(
     # post_query = post_query.order_by(
     #     getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
     # )
-    # if q.sort_direction is "asc":
+    # if q.sort_direction == "asc":
     #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).asc())
     # else:
     #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
@@ -117,10 +115,17 @@ async def search_post(
     post_query = post_query.offset(q.offset).limit(q.count)
     posts = (await AppCtx.current.db.session.scalars(post_query)).all()
 
-    return SearchPostResponse(
-        posts=[GetPostResponse.from_orm(post) for post in posts],
-        count=post_cnt,
-    )
+    if post_cnt == 0:
+        return SearchPostResponse(
+            posts=[GetPostResponse.from_orm(post) for post in posts],
+            count=post_cnt,
+            message="Can't find a post that meets the requirements. Please try again.",
+        )
+    else:
+        return SearchPostResponse(
+            posts=[GetPostResponse.from_orm(post) for post in posts],
+            count=post_cnt,
+        )
 
 
 class PostPostRequest(BaseModel):
@@ -132,7 +137,7 @@ class PostPostResponse(BaseModel):
     post_id: int
 
 
-
+# DONE: Hashtag 잘 적재되는지 확인 완료! (AppCtx 앞에 await 안 붙여줘서 coroutine의 속성으로 인식 못한거임)
 @router.post("/")
 async def create_post(
     q: PostPostRequest,
@@ -154,10 +159,10 @@ async def create_post(
     pattern = "#([0-9a-zA-Z가-힣]*)"
     hashtags = re.compile(pattern).findall(content)  # type: list
 
-    AppCtx.current.db.session.execute(
-        pg_insert(m.Hashtag)
-        .values([{"name": hashtag} for hashtag in hashtags])
-        .on_conflict_do_nothing()  # This is only available with postgresql
+    await AppCtx.current.db.session.execute(
+        pg_insert(m.Hashtag).values(
+            [{"name": hashtag} for hashtag in hashtags]
+        ).on_conflict_do_nothing()  # This is only available with postgresql
     )
     """
     INSERT INTO hashtag
@@ -167,7 +172,6 @@ async def create_post(
     )
     ON CONFLICT DO NOTHING;
     """
-
     await AppCtx.current.db.session.commit()
 
     return PostPostResponse(post_id=post.id)
