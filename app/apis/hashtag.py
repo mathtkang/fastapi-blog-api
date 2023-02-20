@@ -24,7 +24,7 @@ class GetHashtagResponse(BaseModel):
 
 class SearchHashtagRequest(BaseModel):
     # filter (query parameters)
-    name: str
+    name: str | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] = "created_at"
     sort_direction: Literal["asc"] | Literal["desc"] = "asc"
@@ -35,7 +35,8 @@ class SearchHashtagRequest(BaseModel):
 
 class SearchHashtagResponse(BaseModel):
     hashtags: list[GetHashtagResponse]
-    count: int  # count는 1만 나오는게 정상! 그래야 upsert가 잘 적용되었다는 뜻
+    count: int  # total number of hashtags (not saved to db)
+    message: str | None
 
 
 @router.post("/search")
@@ -59,19 +60,20 @@ async def search_hashtag(
     else:  # "desc"
         hashtag_query = hashtag_query.order_by(getattr(m.Hashtag, q.sort_by).desc())
 
-
     hashtag_query = hashtag_query.offset(q.offset).limit(q.count)
     hashtags = (await AppCtx.current.db.session.scalars(hashtag_query)).all()
 
-    # if hashtag_cnt > 2:
-    #     raise ValueError
+    if hashtag_cnt == 0:
+        return SearchHashtagResponse(
+            hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
+            count=hashtag_cnt,
+            message="Can't find a hashtag that meets the requirements. Please try again.",
+        )
+    else:
+        return SearchHashtagResponse(
+            hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
+            count=hashtag_cnt,
+        )
 
-    return SearchHashtagResponse(
-        hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
-        count=hashtag_cnt,
-    )
 
-
-
-
-#create
+#create <- at content of create_post 
