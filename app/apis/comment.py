@@ -27,10 +27,13 @@ class GetCommentResponse(BaseModel):
 
 @router.get("/{comment_id:int}")
 async def get_comment(
+    post_id: int,
     comment_id: int,
 ):
     comment: m.Comment = await AppCtx.current.db.session.scalar(
-        sql_exp.select(m.Comment).where(m.Comment.id == comment_id)
+        sql_exp.select(m.Comment).where(
+            (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
+        )
     )
 
     if comment is None:
@@ -45,13 +48,10 @@ async def get_comment(
 class SearchCommentRequest(BaseModel):
     # filter (query parameters)
     content: str | None
-    post_id: int | None
     written_user_id: int | None
     parent_comment_id: int | None
     # sort
-    sort_by: Literal["created_at"] | Literal["updated_at"] | Literal[
-        "written_user_id"
-    ] = "created_at"
+    sort_by: Literal["created_at"] | Literal["updated_at"] = "created_at"
     sort_direction: Literal["asc"] | Literal["desc"] = "asc"
     # pagination
     offset: int = 0
@@ -61,48 +61,52 @@ class SearchCommentRequest(BaseModel):
 class SearchCommentResponse(BaseModel):
     comments: list[GetCommentResponse]
     count: int
+    message: str | None
 
 
 @router.post("/search")
 async def search_comments(
+    post_id: int,
     q: SearchCommentRequest,
 ):
     comment_query = sql_exp.select(m.Comment)
 
-    if q.parent_comment_id is not None:
-        comment_query = comment_query.where(
-            m.Comment.parent_comment_id == q.parent_comment_id
-        )
-    if q.written_user_id is not None:
-        comment_query = comment_query.where(m.Comment.written_user_id == q.written_user_id)
-    if q.post_id is not None:
-        comment_query = comment_query.where(m.Comment.post_id == q.post_id)
     if q.content is not None:
         comment_query = comment_query.where(m.Comment.content.ilike(q.content))
+    if q.written_user_id is not None:
+        comment_query = comment_query.where(m.Comment.written_user_id == q.written_user_id)
+    if post_id is not None:
+        comment_query = comment_query.where(m.Comment.post_id == post_id)
+    if q.parent_comment_id is not None:
+        comment_query = comment_query.where(m.Comment.parent_comment_id == q.parent_comment_id)
 
-    comment_cnt: int = AppCtx.current.db.session.scalar(
+    comment_cnt: int = await AppCtx.current.db.session.scalar(
         sql_exp.select(sql_func.count()).select_from(comment_query)
     )
 
-    sort_by_column = {
-        "created_at": m.Comment.created_at,
-        "updated_at": m.Comment.updated_at,
-        "written_user_id": m.Comment.written_user_id,
-    }[q.sort_by]
-    sort_exp = {
-        "asc": sort_by_column.asc(),
-        "desc": sort_by_column.desc(),
-    }[q.sort_direction]
+    comment_query = comment_query.order_by(
+        getattr(getattr(m.Comment, q.sort_by), q.sort_direction)()
+    )
+    if q.sort_direction == "asc":
+        comment_query = comment_query.order_by(getattr(m.Comment, q.sort_by).asc())
+    else:
+        comment_query = comment_query.order_by(getattr(m.Comment, q.sort_by).desc())
 
-    comment_query = comment_query.order_by(sort_exp)
 
     comment_query = comment_query.offset(q.offset).limit(q.count)
     comments = (await AppCtx.current.db.session.scalars(comment_query)).all()
 
-    return SearchCommentResponse(
-        comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
-        count=comment_cnt,
-    )
+    if comment_cnt == 0:
+        return SearchCommentResponse(
+            comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
+            count=comment_cnt,
+            message="Can't find a comment that meets the requirements. Please try again.",
+        )
+    else:
+        return SearchCommentResponse(
+            comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
+            count=comment_cnt,
+        )
 
 
 class PostCommentRequest(BaseModel):
@@ -134,13 +138,14 @@ async def create_comment(
 
 @router.put("/{comment_id:int}")
 async def update_comment(
+    post_id: int,
     comment_id: int,
     q: PostCommentRequest,
     user_id: int = Depends(resolve_access_token),
 ):
     comment: m.Comment | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
-            (m.Comment.id == comment_id)
+            (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
         )
     )
 
@@ -160,12 +165,13 @@ async def update_comment(
 
 @router.delete("/{comment_id:int}")
 async def delete_comment(
+    post_id: int,
     comment_id: int,
     user_id: int = Depends(resolve_access_token),
 ):
     comment: m.Comment | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
-            (m.Comment.id == comment_id)
+            (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
         )
     )
 
