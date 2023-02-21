@@ -78,7 +78,7 @@ async def login(q: AuthRequest):
     if user is None:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="user not found")
 
-    if not validate_hashed_password(q.password, user.password):
+    if not await validate_hashed_password(q.password, user.password):
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST, detail="Your password is incorrect."
         )
