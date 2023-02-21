@@ -31,6 +31,7 @@ sqlalchemy = "^2.0.0"
 pydantic = "^1.10.4"
 python-dotenv = "^0.21.1"
 contextvars = "^2.4"
+async-property = "^0.2.1"
 
 
 [build-system]
