@@ -39,6 +39,7 @@ class SearchHashtagResponse(BaseModel):
     message: str | None
 
 
+# DONE
 @router.post("/search")
 async def search_hashtag(
     q: SearchHashtagRequest,
