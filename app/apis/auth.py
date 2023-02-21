@@ -1,12 +1,15 @@
 from fastapi import Depends, APIRouter, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession as Session
 import re
 from pydantic import BaseModel, Field
 from sqlalchemy.sql import expression as sql_exp
 from starlette.status import HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
 import jwt, time
 from app.database import models as m
-from app.utils.auth import generate_hashed_password, validate_hashed_password
+from app.utils.auth import (
+    generate_hashed_password, 
+    validate_hashed_password,
+    validate_email_exist,
+)
 from app.utils.ctx import AppCtx
 import dotenv
 import os
@@ -43,13 +46,15 @@ async def signup(q: AuthRequest):
     """
     This is the endpoint for the login page.
     """
-    is_email_exist = await AppCtx.current.db.session.scalar(
-        sql_exp.exists().where(m.User.email == q.email).select()
-    )
-    if is_email_exist:
-        raise HTTPException(
-            status_code=HTTP_409_CONFLICT, detail="Your email already exists."
-        )
+
+    await validate_email_exist(q.email)
+    # is_email_exist = await AppCtx.current.db.session.scalar(
+    #     sql_exp.exists().where(m.User.email == q.email).select()
+    # )
+    # if is_email_exist:
+    #     raise HTTPException(
+    #         status_code=HTTP_409_CONFLICT, detail="Your email already exists."
+    #     )
 
     user = m.User(
         email=q.email, 
