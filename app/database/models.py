@@ -10,6 +10,7 @@ from sqlalchemy.sql import func as sa_func
 from sqlalchemy.ext.declarative import declarative_base
 from app.utils.blob import get_image_url
 import asyncio
+from async_property import async_property
 
 from .base_ import ModelBase
 
@@ -114,14 +115,22 @@ class User(Base):
         server_onupdate=FetchedValue(),
     )
     
-    @property
-    async def profile_file_url(self) -> str | None:
-        if self.profile_file_key is None:
-            return None
+    # 만약 profile_file_url 가져와지지 않으면 'async_property' 적용
 
-        return asyncio.run(
-            await get_image_url(self.profile_file_key)
-        )
+    # @async_property
+    # async def profile_file_url(self) -> str | None:
+    #     if self.profile_file_key is None:
+    #         return None
+    #     return asyncio.run(
+    #         await get_image_url(self.profile_file_key)
+    #     )
+        # return await get_image_url(self.profile_file_key)
+    
+    # @property
+    # def profile_file_url(self) -> str | None:
+    #     if self.profile_file_key is None:
+    #         return None
+    #     return get_image_url(self.profile_file_key)
 
 
 class Like(Base):
@@ -178,6 +187,7 @@ class Hashtag(Base):
         server_default=sql_text("CURRENT_TIMESTAMP"),
         server_onupdate=FetchedValue(),
     )
+    # 생각해보면 hashtag는 생성만 하고 수정은 안하니까, updated_at 속성은 필요 없는거 아닌가?
 
 
 class PostHashTag(Base):
