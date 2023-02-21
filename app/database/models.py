@@ -113,13 +113,14 @@ class User(Base):
         server_default=sql_text("CURRENT_TIMESTAMP"),
         server_onupdate=FetchedValue(),
     )
+    
     @property
-    def profile_file_url(self) -> str | None:
+    async def profile_file_url(self) -> str | None:
         if self.profile_file_key is None:
             return None
-        
+
         return asyncio.run(
-            get_image_url(self.profile_file_key)
+            await get_image_url(self.profile_file_key)
         )
 
 
