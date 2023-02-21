@@ -1,5 +1,3 @@
-from boto3.session import Session
-from mypy_boto3_s3.client import S3Client
 import asyncio
 import io
 from concurrent.futures import ThreadPoolExecutor
@@ -14,7 +12,8 @@ _executor = ThreadPoolExecutor(10)
 DEFAULT_BUCKET_NAME = "fastapi-practice"
 A_ONE_DAY=60 * 60 * 24
 
-async def upload_image(
+
+async def upload_profile_img(
     user_id: int,
     file_name: str,
     file_obj: io.BytesIO,
@@ -42,8 +41,9 @@ async def upload_image(
     return attachment_file_key
 
 
+# TODO: 작동 확인!
 async def get_image_url(
-    img_file_key,
+    attachment_file_key,
 ) -> str:
     loop = asyncio.get_running_loop()
     
@@ -52,8 +52,8 @@ async def get_image_url(
         AppCtx.current.s3.generate_presigned_url,
         "get_object",
         Params={
-            "Bucket": DEFAULT_BUCKET_NAME,
-            "Key": img_file_key,
+            "Bucket": DEFAULT_BUCKET_NAME,  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
+            "Key": attachment_file_key,  # key는 유저에 따라서 바뀔 수 있음
         },
         ExpiresIn=A_ONE_DAY,
     )
