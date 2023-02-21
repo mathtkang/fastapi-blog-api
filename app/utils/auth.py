@@ -6,7 +6,9 @@ from app.database import models as m
 from sqlalchemy.sql import expression as sql_exp
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -27,7 +29,6 @@ class AuthUtilError(Exception):
 _executor = ThreadPoolExecutor(10)
 
 
-# DONE: sync to async
 async def generate_hashed_password(password: str) -> str:
     def _inner(password: str) -> str:
         pbkdf2_salt = os.urandom(16)
@@ -118,13 +119,25 @@ def resolve_access_token(
     return validate_access_token(credentials.credentials)
 
 
+
+async def validate_email_exist(email: str):
+    is_email_exist = await AppCtx.current.db.session.scalar(
+        sql_exp.exists().where(m.User.email == email).select()
+    )
+    if is_email_exist:
+        raise HTTPException(
+            status_code=HTTP_409_CONFLICT, 
+            detail="This email address already exists. Please try again.",
+        )
+
+
 async def validate_user_role(user_id: int, role: m.UserRoleEnum):
     user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
 
     if user is None:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="user not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found.")
 
     if user.role < role:
         raise HTTPException(
