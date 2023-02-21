@@ -17,7 +17,7 @@ from app.utils.auth import (
     validate_hashed_password,
     validate_email_exist,
 )
-from app.utils.blob import upload_profile_img
+from app.utils.blob import upload_profile_img, get_image_url
 from app.utils.ctx import AppCtx
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -32,7 +32,9 @@ class GetUserResponse(BaseModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     role: int
+    # 에러발생: profile_file_url의 타입이 (예상되는 type인 str과) 다르다. (그래서 다른 방법으로 구현)
     profile_file_url: str | None
+
     # 만약 profile_file_url이 not None이라서 불러오는 경우, 
     # models.py에 있는 @property가 실행되면서, get_image_url 함수 실행됨
 
@@ -46,7 +48,7 @@ async def get_user(
     user_id: int,
     my_user_id: int = Depends(resolve_access_token),
 ) -> GetUserResponse:
-    await validate_user_role(user_id, m.UserRoleEnum.Owner)  # Owner = 50
+    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)  # Owner = 50
 
     user: m.User = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
@@ -58,7 +60,6 @@ async def get_user(
             detail=f"There is no User whose user_id is {user_id}. Please try again."
         )
 
-    # TODO: 만약 profile_file_url 가져와지지 않으면 'async-property' 찾아보기
     return GetUserResponse.from_orm(user)
 
 
@@ -79,13 +80,13 @@ class SearchUserResponse(BaseModel):
     message: str | None
 
 
-# DONE: 유저에 대한 search
+# DONE: 유저에 대한 search (+ get_img_url)
 @router.post("/search")
 async def search_user(
     q: SearchUserRequest,
-    user_id: int = Depends(resolve_access_token),
+    my_user_id: int = Depends(resolve_access_token),
 ):
-    await validate_user_role(user_id, m.UserRoleEnum.Owner)  # Owner = 50
+    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)  # Owner = 50
 
     user_query = sql_exp.select(m.User)
 
@@ -111,6 +112,10 @@ async def search_user(
     user_query = user_query.offset(q.offset).limit(q.count)
     users = (await AppCtx.current.db.session.scalars(user_query)).all()
 
+    for user in users:
+        if user.profile_file_key is not None:
+            user.profile_file_url = get_image_url(user.profile_file_key)
+
     if user_cnt == 0:
         return SearchUserResponse(
             users=[GetUserResponse.from_orm(user) for user in users],
@@ -127,12 +132,10 @@ async def search_user(
 # DONE: 본인 프로필 불러오기
 @router.get("/me")
 async def get_my_profile(
-    user_id: int = Depends(resolve_access_token),
+    my_user_id: int = Depends(resolve_access_token),
 ):
-    await validate_user_role(user_id, m.UserRoleEnum.Admin)
-
     user: m.User | None = await AppCtx.current.db.session.scalar(
-        sql_exp.select(m.User).where(m.User.id == user_id)
+        sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
     if user is None:
@@ -140,9 +143,12 @@ async def get_my_profile(
             status_code=HTTP_404_NOT_FOUND,
             detail=f"User not found."
         )
-    # m.User.profile_file_url
     
-    # 만약 profile_file_url 가져와지지 않으면 'async-property' 찾아보기
+    if user.profile_file_key is not None:
+        # TypeError: BaseEventLoop.run_in_executor() got an unexpected keyword argument 'Params'
+        # user.profile_file_url = await get_image_url(user.profile_file_key)  # ERROR
+        user.profile_file_url = get_image_url(user.profile_file_key)  # DONE
+    
     return GetUserResponse.from_orm(user)
 
 '''
@@ -163,15 +169,16 @@ async def get_my_profile(
 '''
 
 
-# DONE: 본인 프로필 '이미지만' 생성하기
 class PostAttachmentResponse(BaseModel):
     bucket: str
     key: str
 
+
+# DONE: 본인 프로필 '이미지만' 생성하기
 @router.post("/profile_img")
 async def post_user_profile_img(
     profile_file: UploadFile,
-    user_id: int = Depends(resolve_access_token),
+    my_user_id: int = Depends(resolve_access_token),
 ):
     """
     파일스토리지
@@ -180,10 +187,9 @@ async def post_user_profile_img(
     3. blob client
     4. 사용자의 입력(file)
     """
-    await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     user: m.User | None = await AppCtx.current.db.session.scalar(
-        sql_exp.select(m.User).where(m.User.id == user_id)
+        sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
     if user is None:
@@ -193,7 +199,7 @@ async def post_user_profile_img(
         )
 
     profile_file_key = await upload_profile_img(
-        user_id,
+        my_user_id,
         profile_file.filename,
         profile_file.file,  # file_object
     )
@@ -211,20 +217,19 @@ async def post_user_profile_img(
 
 class PutUserRequest(BaseModel):
     email: str
-    profile_file_key: str | None
-    # file: UploadedFile | None
 
 
-# 본인 프로필 업데이트 하기 (available email, profile_img)
+# DONE: 본인 프로필 업데이트 하기 (현재 email만)
+# question: put으로 한번 더 UploadFile 하는게 의미 있는가? (의미 없음 그래서 안 함!)
 @router.put("/me")
 async def update_me(
     q: PutUserRequest,
-    user_id: int = Depends(resolve_access_token),
+    my_user_id: int = Depends(resolve_access_token),
 ):
-    await validate_user_role(user_id, m.UserRoleEnum.Admin)
+    await validate_email_exist(q.email)
 
     user: m.User | None = await AppCtx.current.db.session.scalar(
-        sql_exp.select(m.User).where(m.User.id == user_id)
+        sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
     if user is None:
@@ -233,10 +238,7 @@ async def update_me(
             detail=f"User not found.",
         )
     
-    await validate_email_exist(q.email)
-
     user.email = q.email
-    user.profile_file_key = q.profile_file_key
 
     AppCtx.current.db.session.add(user)
     await AppCtx.current.db.session.commit()
@@ -249,22 +251,22 @@ class PostPasswordRequest(BaseModel):
     new_password: str
 
 
-
+# DONE
 @router.put("/change-password")
 async def change_password(
     q: PostPasswordRequest,
-    user_id: int = Depends(resolve_access_token),
+    my_user_id: int = Depends(resolve_access_token),
 ):
     user: m.User | None = await AppCtx.current.db.session.scalar(
-        sql_exp.select(m.User).where(m.User.id == user_id)
+        sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
-    if not validate_hashed_password(q.old_password, user.password):
+    if not await validate_hashed_password(q.old_password, user.password):
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST, detail="password is wrong"
+            status_code=HTTP_400_BAD_REQUEST, detail="Your password is incorrect."
         )
 
-    user.password = generate_hashed_password(q.new_password)
+    user.password = await generate_hashed_password(q.new_password)
 
     AppCtx.current.db.session.add(user)
     await AppCtx.current.db.session.commit()
@@ -276,6 +278,7 @@ class PostRoleRequest(BaseModel):
     user_id: int
 
 
+# DONE
 @router.put("/role")
 async def change_user_role(
     q: PostRoleRequest,
@@ -293,15 +296,11 @@ async def change_user_role(
     await AppCtx.current.db.session.commit()
 
 
-
-# TODO: TEST
-# 스스로 탈퇴하기
+# DONE: 스스로 탈퇴하기 (권한은 all)
 @router.delete("/")
 async def delete_user(
     my_user_id: int = Depends(resolve_access_token),
 ):
-    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)
-
     user: m.User | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
@@ -310,8 +309,7 @@ async def delete_user(
     await AppCtx.current.db.session.commit()
 
 
-# TODO: TEST
-# (Owner 권한으로) 다른 유저 탈퇴시키기
+# DONE: (Owner 권한으로) 다른 유저 탈퇴시키기
 @router.delete("/{user_id:int}")
 async def delete_user(
     user_id: int,
