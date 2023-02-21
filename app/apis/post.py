@@ -197,7 +197,8 @@ async def update_post(
 
     if post.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="This is not your post."
+            status_code=HTTP_403_FORBIDDEN, 
+            detail="This is not your post. Therefore, it cannot be updated."
         )
 
     post.title = q.title
@@ -224,7 +225,8 @@ async def delete_post(
 
     if post.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="This is not your post."
+            status_code=HTTP_403_FORBIDDEN, 
+            detail="This is not your post. Therefore, it cannot be deleted."
         )
 
     await AppCtx.current.db.session.delete(post)

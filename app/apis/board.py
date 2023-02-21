@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, APIRouter
 from sqlalchemy.sql import expression as sql_exp
 from pydantic import BaseModel
 import datetime
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from typing import Literal
 from sqlalchemy.sql import func as sql_func
 from app.utils.auth import resolve_access_token, validate_user_role
@@ -154,6 +154,12 @@ async def update_board(
 
     if board is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
+    
+    if board.written_user_id != user_id:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN, 
+            detail="This is not your board. Therefore, it cannot be updated."
+        )
 
     board.title = q.title
 
@@ -161,6 +167,7 @@ async def update_board(
     await AppCtx.current.db.session.commit()
 
 
+# TODO: 만약 보드를 삭제했을 때 관련된 하위(post) 다 삭제되는지 확인
 @router.delete("/{board_id:int}")
 async def delete_board(
     board_id: int,
@@ -176,6 +183,12 @@ async def delete_board(
 
     if board is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
+    
+    if board.written_user_id != user_id:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN, 
+            detail="This is not your board. Therefore, it cannot be deleted."
+        )
 
     await AppCtx.current.db.session.delete(board)
     await AppCtx.current.db.session.commit()
