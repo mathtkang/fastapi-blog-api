@@ -41,15 +41,29 @@ async def upload_profile_img(
     return attachment_file_key
 
 
-# TODO: 작동 확인!
-async def get_image_url(
+# TRY, ERROR
+# async def get_image_url(
+#     attachment_file_key,
+# ) -> str:
+#     loop = asyncio.get_running_loop()
+    
+#     return await loop.run_in_executor(
+#         _executor,
+#         AppCtx.current.s3.generate_presigned_url,
+#         "get_object",
+#         Params={
+#             "Bucket": DEFAULT_BUCKET_NAME,  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
+#             "Key": attachment_file_key,  # key는 유저에 따라서 바뀔 수 있음
+#         },
+#         ExpiresIn=A_ONE_DAY,
+#     )
+
+
+# DONE
+def get_image_url(
     attachment_file_key,
 ) -> str:
-    loop = asyncio.get_running_loop()
-    
-    return await loop.run_in_executor(
-        _executor,
-        AppCtx.current.s3.generate_presigned_url,
+    return AppCtx.current.s3.generate_presigned_url(
         "get_object",
         Params={
             "Bucket": DEFAULT_BUCKET_NAME,  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
