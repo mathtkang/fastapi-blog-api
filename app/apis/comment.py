@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 import datetime
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from typing import Literal
-from app.utils.auth import resolve_access_token
+from app.utils.auth import resolve_access_token, validate_user_role
 from app.database import models as m
 from app.utils.ctx import AppCtx
 
@@ -25,6 +25,7 @@ class GetCommentResponse(BaseModel):
         orm_mode = True
 
 
+# DONE
 @router.get("/{comment_id:int}")
 async def get_comment(
     post_id: int,
@@ -39,7 +40,7 @@ async def get_comment(
     if comment is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"Comment with id {comment_id} not found",
+            detail=f"Comment not found.",
         )
 
     return GetCommentResponse.from_orm(comment)
@@ -64,6 +65,7 @@ class SearchCommentResponse(BaseModel):
     message: str | None
 
 
+# DONE
 @router.post("/search")
 async def search_comments(
     post_id: int,
@@ -98,13 +100,13 @@ async def search_comments(
 
     if comment_cnt == 0:
         return SearchCommentResponse(
-            comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
+            comments=[GetCommentResponse.from_orm(comment) for comment in comments],
             count=comment_cnt,
             message="Can't find a comment that meets the requirements. Please try again.",
         )
     else:
         return SearchCommentResponse(
-            comments=[SearchCommentRequest.from_orm(comment) for comment in comments],
+            comments=[GetCommentResponse.from_orm(comment) for comment in comments],
             count=comment_cnt,
         )
 
@@ -117,12 +119,15 @@ class PostCommentResponse(BaseModel):
     comment_id: int
 
 
+# DONE
 @router.post("/")
 async def create_comment(
     post_id: int,
     q: PostCommentRequest,
     user_id: int = Depends(resolve_access_token),
 ):
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
+
     comment = m.Comment(
         post_id=post_id,
         written_user_id=user_id,
@@ -136,6 +141,7 @@ async def create_comment(
     return PostCommentResponse(comment_id=comment.id)
 
 
+# DONE
 @router.put("/{comment_id:int}")
 async def update_comment(
     post_id: int,
@@ -143,6 +149,8 @@ async def update_comment(
     q: PostCommentRequest,
     user_id: int = Depends(resolve_access_token),
 ):
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
+
     comment: m.Comment | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
@@ -150,11 +158,12 @@ async def update_comment(
     )
 
     if comment is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="comment not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Comment not found.")
 
     if comment.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
+            status_code=HTTP_403_FORBIDDEN, 
+            detail="This is not your comment. Therefore, it cannot be updated."
         )
 
     comment.content = q.content
@@ -163,12 +172,15 @@ async def update_comment(
     await AppCtx.current.db.session.commit()
 
 
+# DONE: parent_comment_id 삭제 시, children_comment도 삭제 확인 완료
 @router.delete("/{comment_id:int}")
 async def delete_comment(
     post_id: int,
     comment_id: int,
     user_id: int = Depends(resolve_access_token),
 ):
+    await validate_user_role(user_id, m.UserRoleEnum.Admin)
+    
     comment: m.Comment | None = await AppCtx.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
@@ -176,11 +188,12 @@ async def delete_comment(
     )
 
     if comment is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="comment not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Comment not found.")
 
     if comment.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="this is not your comment"
+            status_code=HTTP_403_FORBIDDEN, 
+            detail="This is not your comment. Therefore, it cannot be deleted."
         )
 
     await AppCtx.current.db.session.delete(comment)
