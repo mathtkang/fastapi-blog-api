@@ -2,6 +2,7 @@
 alembic.ini
 poetry.lock
 .etc
+TODO.txt
 
 # Created by https://www.toptal.com/developers/gitignore/api/linux,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,python
@@ -145,13 +146,14 @@ celerybeat.pid
 
 # Environments
 .env
+.env.test
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
-.env.test
+
 
 # Spyder project settings
 .spyderproject
