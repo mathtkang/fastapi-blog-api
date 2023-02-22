@@ -48,13 +48,6 @@ async def signup(q: AuthRequest):
     """
 
     await validate_email_exist(q.email)
-    # is_email_exist = await AppCtx.current.db.session.scalar(
-    #     sql_exp.exists().where(m.User.email == q.email).select()
-    # )
-    # if is_email_exist:
-    #     raise HTTPException(
-    #         status_code=HTTP_409_CONFLICT, detail="Your email already exists."
-    #     )
 
     user = m.User(
         email=q.email, 
