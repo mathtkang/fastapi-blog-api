@@ -25,7 +25,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_create_post(app_client: AsyncClient, user_access_token: str):
+    async def test_create_post(self, app_client: AsyncClient, user_access_token: str):
         board_id = (
             await search_board(app_client, BOARD_TITLE)
         )['id']
@@ -46,7 +46,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_get_post(app_client: AsyncClient):
+    async def test_get_post(self, app_client: AsyncClient):
         post_id = (
             await search_post(app_client, POST_TITLE)
         )['id']
@@ -61,7 +61,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_update_post(app_client: AsyncClient, user_access_token: str):
+    async def test_update_post(self, app_client: AsyncClient, user_access_token: str):
         board_id = (
             await search_board(app_client, BOARD_TITLE)
         )['id']
@@ -85,7 +85,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_delete_post(app_client: AsyncClient, user_access_token: str):
+    async def test_delete_post(self, app_client: AsyncClient, user_access_token: str):
         post_id = (
             await search_post(app_client, POST_TITLE)
         )['id']
@@ -100,7 +100,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_like_post(app_client: AsyncClient, user_access_token: str):
+    async def test_like_post(self, app_client: AsyncClient, user_access_token: str):
         post_id = (
             await search_post(app_client, POST_TITLE)
         )['id']
@@ -116,7 +116,7 @@ class TestPost:
     
     
     @pytest.mark.asyncio
-    async def test_like_delete(app_client: AsyncClient, user_access_token: str):
+    async def test_like_delete(self, app_client: AsyncClient, user_access_token: str):
         post_id = (
             await search_post(app_client, POST_TITLE)
         )['id']
