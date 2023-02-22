@@ -7,7 +7,7 @@ from .user import router as user_router
 
 __all__ = ["ALL_ROUTERS"]
 
-API_ROUTERS = [
+ALL_ROUTERS = [
     auth_router,
     board_router,
     comment_router,
