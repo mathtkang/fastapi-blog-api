@@ -12,16 +12,16 @@ from app.utils.blob import get_image_url
 import asyncio
 from async_property import async_property
 
-from .base_ import ModelBase
+from app.database.base_ import ModelBase
 
 
 # orm 매핑 함수 선언
 # Base = declarative_base()  # (sqlalchemy==1.4)
 
-class Base:
-    __allow_unmapped__ = True
+# class Base:
+#     __allow_unmapped__ = True
 
-Base = declarative_base(cls=Base)  # (sqlalchemy==2.0) ref.https://docs.sqlalchemy.org/en/14/changelog/migration_20.html
+# Base = declarative_base(cls=Base)  # (sqlalchemy==2.0) ref.https://docs.sqlalchemy.org/en/14/changelog/migration_20.html
 
 
 TZ_UTC = datetime.timezone.utc
@@ -33,7 +33,7 @@ class UserRoleEnum(int, enum.Enum):
     User = 0
 
 
-class Board(Base):
+class Board(ModelBase):
     __tablename__ = "board"
 
     id = Column(Integer, primary_key=True)
@@ -41,17 +41,6 @@ class Board(Base):
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
     written_user = relationship("User", uselist=False)  # relationship: orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
 
     def __repr__(self):
         # `Board(id={self.id}, board_name={self.board_name}, )`
@@ -59,13 +48,12 @@ class Board(Base):
         return result
 
 
-class Post(Base):
+class Post(ModelBase):
     __tablename__ = "post"
 
     id = Column(Integer, primary_key=True)
     title = Column(String(150), nullable=False)
     content = Column(Text, nullable=True, default=None)
-    like_cnt: ColumnProperty
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
     written_user = relationship("User", uselist=False)
     board_id = Column(Integer, ForeignKey("board.id"), index=True)
@@ -74,21 +62,12 @@ class Post(Base):
     comments = relationship(
         "Comment", uselist=True, back_populates="post", cascade="all"
     )
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
     # hashtags = relationship("Hashtag", uselist=False, back_populates="post", cascade="all")
 
+    like_cnt: int
 
-class User(Base):
+
+class User(ModelBase):
     __tablename__ = "user"
 
     id = Column(Integer, primary_key=True)
@@ -102,17 +81,6 @@ class User(Base):
     likes = relationship("Like", uselist=True, back_populates="user", cascade="all")
     comments = relationship(
         "Comment", uselist=True, back_populates="written_user", cascade="all"
-    )
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
     )
     
     # 만약 profile_file_url 가져와지지 않으면 'async_property' 적용
@@ -133,7 +101,7 @@ class User(Base):
     #     return get_image_url(self.profile_file_key)
 
 
-class Like(Base):
+class Like(ModelBase):
     __tablename__ = "like"
 
     post_id = Column(Integer, ForeignKey("post.id"), primary_key=True)
@@ -142,7 +110,7 @@ class Like(Base):
     user = relationship("User", uselist=False)
 
 
-class Comment(Base):
+class Comment(ModelBase):
     __tablename__ = "comment"
 
     id = Column(Integer, primary_key=True)
@@ -159,38 +127,15 @@ class Comment(Base):
         backref=backref("parent_comment", remote_side=[id]), 
         cascade="all"
     )
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
 
 
-class Hashtag(Base):
+class Hashtag(ModelBase):
     __tablename__ = "hashtag"
 
     name = Column(String, primary_key=True)
-    created_at = Column(
-        TIMESTAMP(timezone=True),
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        nullable=False,
-    )
-    updated_at = Column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sql_text("CURRENT_TIMESTAMP"),
-        server_onupdate=FetchedValue(),
-    )
-    # 생각해보면 hashtag는 생성만 하고 수정은 안하니까, updated_at 속성은 필요 없는거 아닌가?
 
 
-class PostHashTag(Base):
+class PostHashTag(ModelBase):
     __tablename__ = "connect_post_hashtag"
 
     post_id = Column(Integer, ForeignKey("post.id"), primary_key=True)
@@ -200,8 +145,11 @@ class PostHashTag(Base):
 
 
 Post.like_cnt = sql_orm.column_property(
-    sa_exp.select(sa_func.count(Like.user_id))
-    .where(Like.post_id == Post.id)
-    .correlate_except(Like)
-    .scalar_subquery()
+    (
+        sa_exp.select(sa_func.count(Like.user_id))
+        .where(Like.post_id == Post.id)
+        .correlate_except(Like)
+        .scalar_subquery()
+    ),
+    deferred=True,
 )
