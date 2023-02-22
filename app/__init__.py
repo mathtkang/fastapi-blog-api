@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Response
 from .settings import AppSettings
-from .apis import API_ROUTERS
+from .apis import ALL_ROUTERS
 import functools
 from app.utils.ctx import AppCtx, create_app_ctx, bind_app_ctx
 import logging
@@ -21,7 +21,7 @@ def create_app(app_settings: AppSettings) -> FastAPI:
     app.add_event_handler("shutdown", functools.partial(_web_app_shutdown, app))
 
     # router Definition
-    for api_router in API_ROUTERS:
+    for api_router in ALL_ROUTERS:
         app.include_router(api_router)
 
     return app
