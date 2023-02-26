@@ -3,7 +3,7 @@ import pytest
 from httpx import AsyncClient
 from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
-from test.mock.user import create_user
+from test.mock.user import create_user, create_owner
 from test.utils import search_board
 
 
@@ -21,17 +21,18 @@ class TestBoard:
         async with with_app_ctx(app_settings):
             await ensure_fresh_env()
             await create_user(app_client)
+            await create_owner(app_client=app_client)
 
 
     @pytest.mark.asyncio
-    async def test_create_board(app_client: AsyncClient, user_access_token: str):
+    async def test_create_board(self, app_client: AsyncClient, owner_access_token: str):
         response = await app_client.post(
             "/boards/",
             json={
                 "title": BOARD_TITLE,
             },
             headers={
-                "Authorization": f"Bearer {user_access_token}"
+                "Authorization": f"Bearer {owner_access_token}"
             }
         )
 
@@ -39,7 +40,7 @@ class TestBoard:
 
 
     @pytest.mark.asyncio
-    async def test_get_board(app_client: AsyncClient):
+    async def test_get_board(self, app_client: AsyncClient):
         board_id = (
             await search_board(app_client, BOARD_TITLE)
         )['id']
@@ -54,7 +55,7 @@ class TestBoard:
 
 
     @pytest.mark.asyncio
-    async def test_update_board(app_client: AsyncClient, user_access_token: str):
+    async def test_update_board(self, app_client: AsyncClient, owner_access_token: str):
         board_id = (
             await search_board(app_client, BOARD_TITLE)
         )['id']
@@ -65,14 +66,14 @@ class TestBoard:
                 "title": UPDATED_BOARD_TITLE,
             },
             headers={
-                "Authorization": f"Bearer {user_access_token}"
+                "Authorization": f"Bearer {owner_access_token}"
             }
         )
         assert response.status_code == 200
 
 
     @pytest.mark.asyncio
-    async def test_delete_board(app_client: AsyncClient, user_access_token: str):
+    async def test_delete_board(self, app_client: AsyncClient, owner_access_token: str):
         board_id = (
             await search_board(app_client, UPDATED_BOARD_TITLE)
         )['id']
@@ -80,7 +81,7 @@ class TestBoard:
         response = await app_client.delete(
             f"/boards/{board_id}",
             headers={
-                "Authorization": f"Bearer {user_access_token}"
+                "Authorization": f"Bearer {owner_access_token}"
             }
         )
         assert response.status_code == 200
