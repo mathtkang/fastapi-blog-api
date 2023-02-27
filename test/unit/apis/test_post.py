@@ -3,14 +3,15 @@ import pytest
 from httpx import AsyncClient
 from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
-from test.mock.user import create_user
+from test.mock.user import create_user, create_owner
 from test.utils import search_board, search_post
+from test.unit.apis.test_board import TestBoard
 
-BOARD_TITLE="This is a board title for the test"
-POST_TITLE="This is a post title for the test"
-POST_CONTENT="This is a post content for the test"
-UPDATED_POST_TITLE="This is a updated post title for the test"
-UPDATED_POST_CONTENT="This is a updated post content for the test"
+BOARD_TITLE="This is a Board Title for the test."
+POST_TITLE="This is a Post Title for the test."
+UPDATED_POST_TITLE="This is a Updated Post Title for the test."
+POST_CONTENT="This is a Post Content for the test. #hashtag"
+UPDATED_POST_CONTENT="This is a Updated Post Content for the test. #add_hashtag"
 
 class TestPost:
     @pytest_asyncio.fixture(scope="class", autouse=True)
@@ -21,11 +22,14 @@ class TestPost:
     ) -> None:
         async with with_app_ctx(app_settings):
             await ensure_fresh_env()
-            await create_user(app_client)
+            await create_user(app_client=app_client)
+            await create_owner(app_client=app_client)
 
 
     @pytest.mark.asyncio
-    async def test_create_post(self, app_client: AsyncClient, user_access_token: str):
+    async def test_create_post(self, app_client: AsyncClient, owner_access_token: str):
+        await TestBoard().test_create_board(app_client=app_client, owner_access_token=owner_access_token)
+
         board_id = (
             await search_board(app_client, BOARD_TITLE)
         )['id']
@@ -38,7 +42,7 @@ class TestPost:
                 "board_id": board_id,
             },
             headers={
-                "Authorization": f"Bearer {user_access_token}"
+                "Authorization": f"Bearer {owner_access_token}"
             }
         )
 
@@ -61,7 +65,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_update_post(self, app_client: AsyncClient, user_access_token: str):
+    async def test_update_post(self, app_client: AsyncClient, owner_access_token: str):
         board_id = (
             await search_board(app_client, BOARD_TITLE)
         )['id']
@@ -77,7 +81,7 @@ class TestPost:
                 "board_id": board_id,
             },
             headers={
-                "Authorization": f"Bearer {user_access_token}"
+                "Authorization": f"Bearer {owner_access_token}"
             }
         )
 
@@ -85,7 +89,7 @@ class TestPost:
 
 
     @pytest.mark.asyncio
-    async def test_delete_post(self, app_client: AsyncClient, user_access_token: str):
+    async def test_delete_post(self, app_client: AsyncClient, owner_access_token: str):
         post_id = (
             await search_post(app_client, POST_TITLE)
         )['id']
@@ -93,7 +97,7 @@ class TestPost:
         response = await app_client.delete(
             f"/posts/{post_id}",
             headers={
-                "Authorization": f"Bearer {user_access_token}"
+                "Authorization": f"Bearer {owner_access_token}"
             }
         )
         assert response.status_code == 200

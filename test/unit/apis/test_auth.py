@@ -3,11 +3,11 @@ import pytest
 from httpx import AsyncClient
 from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
-from test.mock.user import create_user
+from test.mock.user import create_user, create_owner
 
 
-EMAIL="user@example.com"
-PASSWORD="password1234!"
+EMAIL="user123@example.com"
+PASSWORD="password1234!!"
 
 class TestAuth:
     @pytest_asyncio.fixture(scope="class", autouse=True)
@@ -18,11 +18,12 @@ class TestAuth:
     ) -> None:
         async with with_app_ctx(app_settings):
             await ensure_fresh_env()
-            await create_user(app_client)
+            await create_user(app_client=app_client)
+            await create_owner(app_client=app_client)
 
 
     @pytest.mark.asyncio
-    async def test_signup(app_client: AsyncClient):
+    async def test_signup(self, app_client: AsyncClient) -> None:
         response = await app_client.post(
             "/auth/signup",
             json={
@@ -34,7 +35,7 @@ class TestAuth:
 
 
     @pytest.mark.asyncio
-    async def test_login(app_client: AsyncClient):
+    async def test_login(self, app_client: AsyncClient):
         response = await app_client.post(
             "/auth/login",
             json={
