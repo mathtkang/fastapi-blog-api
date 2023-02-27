@@ -4,9 +4,10 @@ from app.database import models as m
 from app.utils.ctx import AppCtx
 from sqlalchemy.sql import expression as sql_exp
 
-BOARD_TITLE="This is a board title for the test"
-POST_TITLE="This is a post title for the test"
-COMMENT_CONTENT="This is a comment content for the test"
+BOARD_TITLE="This is a Board Title for the test."
+POST_TITLE="This is a Post Title for the test."
+COMMENT_CONTENT="This is a Comment Content for the test."
+
 
 async def search_board(app_client: AsyncClient, title: str) -> dict[str, Any]:
     response = await app_client.post(
@@ -17,15 +18,13 @@ async def search_board(app_client: AsyncClient, title: str) -> dict[str, Any]:
             'count': 1,
         }
     )
-
-    return response.json()['boards'][0]  # board
+    return response.json()['boards'][0]  # object of board
 
 
 async def search_post(app_client: AsyncClient, title: str) -> dict[str, Any]:
     board_id = (
         await search_board(app_client, BOARD_TITLE)
     )['id']
-
     response = await app_client.post(
         '/posts/search',
         json={
@@ -35,7 +34,6 @@ async def search_post(app_client: AsyncClient, title: str) -> dict[str, Any]:
             'count': 1,
         }
     )
-    
     return response.json()['posts'][0]
 
 
@@ -62,8 +60,13 @@ async def search_comment(
     return response.json()['comments'][0]
 
 
-async def search_user(
-    app_client: AsyncClient, 
-    user_access_token: str
-) -> dict[str, Any]:
-    pass
+async def search_user(app_client: AsyncClient, email: str) -> dict[str, Any]:
+    response = await app_client.post(
+        '/user/search',
+        json={
+            'email': email,
+            'offset': 0,
+            'count': 1,
+        }
+    )
+    return response.json()['users'][0]
