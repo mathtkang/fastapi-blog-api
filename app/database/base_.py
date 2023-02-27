@@ -19,6 +19,7 @@ ModelMeta: DeclarativeMeta = declarative_base()
 
 class ModelBase(ModelMeta):
     __abstract__ = True
+    __allow_unmapped__ = True
 
     __table__: Table
     metadata: MetaData

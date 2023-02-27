@@ -59,7 +59,7 @@ class DbConn:
                 expire_on_commit=False,
             ),
             scopefunc=lambda: AppCtx.current.id,  # session 발급 단위 (lambda: 익명함수)
-            echo=True,  # for performance analysis
+            # echo=False,  # for performance analysis
         )
 
     @property
