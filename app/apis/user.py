@@ -298,7 +298,7 @@ async def change_user_role(
 
 # DONE: 스스로 탈퇴하기 (권한은 all)
 @router.delete("/")
-async def delete_user(
+async def delete_self(
     my_user_id: int = Depends(resolve_access_token),
 ):
     user: m.User | None = await AppCtx.current.db.session.scalar(
