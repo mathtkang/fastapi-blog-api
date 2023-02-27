@@ -7,8 +7,8 @@ from test.mock.user import create_user, create_owner
 from test.utils import search_board
 
 
-BOARD_TITLE="This is a board title for the test"
-UPDATED_BOARD_TITLE="This is a updated board title for the testf"
+BOARD_TITLE="This is a Board Title for the test."
+UPDATED_BOARD_TITLE="This is a Updated Board Title for the test."
 
 class TestBoard:
     # 테스트 함수 실행시, 필요한 미리 정의된 입력값
@@ -20,7 +20,7 @@ class TestBoard:
     ) -> None:
         async with with_app_ctx(app_settings):
             await ensure_fresh_env()
-            await create_user(app_client)
+            await create_user(app_client=app_client)
             await create_owner(app_client=app_client)
 
 
@@ -37,7 +37,7 @@ class TestBoard:
         )
 
         assert response.status_code == 200
-
+        
 
     @pytest.mark.asyncio
     async def test_get_board(self, app_client: AsyncClient):
