@@ -62,7 +62,6 @@ class SearchCommentRequest(BaseModel):
 class SearchCommentResponse(BaseModel):
     comments: list[GetCommentResponse]
     count: int
-    message: str | None
 
 
 # DONE
@@ -98,17 +97,10 @@ async def search_comments(
     comment_query = comment_query.offset(q.offset).limit(q.count)
     comments = (await AppCtx.current.db.session.scalars(comment_query)).all()
 
-    if comment_cnt == 0:
-        return SearchCommentResponse(
-            comments=[GetCommentResponse.from_orm(comment) for comment in comments],
-            count=comment_cnt,
-            message="Can't find a comment that meets the requirements. Please try again.",
-        )
-    else:
-        return SearchCommentResponse(
-            comments=[GetCommentResponse.from_orm(comment) for comment in comments],
-            count=comment_cnt,
-        )
+    return SearchCommentResponse(
+        comments=[GetCommentResponse.from_orm(comment) for comment in comments],
+        count=comment_cnt,
+    )
 
 
 class PostCommentRequest(BaseModel):

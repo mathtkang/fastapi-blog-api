@@ -77,7 +77,6 @@ class SearchUserRequest(BaseModel):
 class SearchUserResponse(BaseModel):
     users: list[GetUserResponse]
     count: int
-    message: str | None
 
 
 # DONE: 유저에 대한 search (+ get_img_url)
@@ -116,17 +115,10 @@ async def search_user(
         if user.profile_file_key is not None:
             user.profile_file_url = get_image_url(user.profile_file_key)
 
-    if user_cnt == 0:
-        return SearchUserResponse(
-            users=[GetUserResponse.from_orm(user) for user in users],
-            count=user_cnt,
-            message="Can't find a USER that meets the requirements. Please try again.",
-        )
-    else:
-        return SearchUserResponse(
-            users=[GetUserResponse.from_orm(user) for user in users],
-            count=user_cnt,
-        )
+    return SearchUserResponse(
+        users=[GetUserResponse.from_orm(user) for user in users],
+        count=user_cnt,
+    )
 
 
 # DONE: 본인 프로필 불러오기

@@ -61,7 +61,6 @@ class SearchBoardRequest(BaseModel):
 class SearchBoardResponse(BaseModel):
     boards: list[GetBoardResponse]
     count: int
-    message: str | None
 
 
 @router.post("/search")
@@ -88,20 +87,12 @@ async def search_board(
         board_query = board_query.order_by(getattr(m.Board, q.sort_by).desc())
 
     board_query = board_query.offset(q.offset).limit(q.count)
-
     boards = (await AppCtx.current.db.session.scalars(board_query)).all()
 
-    if board_cnt == 0:
-        return SearchBoardResponse(
-            boards=[GetBoardResponse.from_orm(board) for board in boards],
-            count=board_cnt,
-            message="Can't find a board that meets the requirements. Please try again.",
-        )
-    else:
-        return SearchBoardResponse(
-            boards=[GetBoardResponse.from_orm(board) for board in boards],
-            count=board_cnt,
-        )
+    return SearchBoardResponse(
+        boards=[GetBoardResponse.from_orm(board) for board in boards],
+        count=board_cnt,
+    )
 
 
 class PostBoardRequest(BaseModel):
@@ -183,7 +174,7 @@ async def delete_board(
 
     if board is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
-    
+
     if board.written_user_id != user_id:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, 

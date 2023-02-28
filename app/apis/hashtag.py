@@ -36,7 +36,6 @@ class SearchHashtagRequest(BaseModel):
 class SearchHashtagResponse(BaseModel):
     hashtags: list[GetHashtagResponse]
     count: int  # total number of hashtags (not saved to db)
-    message: str | None
 
 
 # DONE
@@ -64,17 +63,10 @@ async def search_hashtag(
     hashtag_query = hashtag_query.offset(q.offset).limit(q.count)
     hashtags = (await AppCtx.current.db.session.scalars(hashtag_query)).all()
 
-    if hashtag_cnt == 0:
-        return SearchHashtagResponse(
-            hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
-            count=hashtag_cnt,
-            message="Can't find a hashtag that meets the requirements. Please try again.",
-        )
-    else:
-        return SearchHashtagResponse(
-            hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
-            count=hashtag_cnt,
-        )
+    return SearchHashtagResponse(
+        hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
+        count=hashtag_cnt,
+    )
 
 
 #create <- at content of create_post 
