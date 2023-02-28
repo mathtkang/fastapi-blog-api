@@ -23,4 +23,3 @@ async def create_board(app_client: AsyncClient, owner_access_token: str) -> int:
     )
     assert response.status_code == 200
     return response.json()['board_id']
-    # return response.json()
