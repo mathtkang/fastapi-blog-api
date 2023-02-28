@@ -144,6 +144,13 @@ class PostHashTag(ModelBase):
     hashtag = relationship("Hashtag", uselist=False)
 
 
+'''
+[board 오브젝트를 부를때 실행]
+저장했다가 board.id로 부를때 암시적으로 board에 대한 쿼리가 실행됨
+(쿼리가 실행될 때 column_property에 대한)
+암시적으로 실행될 경우, column_property에 대한 쿼리는 await이 안 붙음
+따라서 암시적으로 가져올때, 명시적으로 부르지 않는이상 이 값을 가져오지 않도록 하면 됨 (deferred=True,)
+'''
 Post.like_cnt = sql_orm.column_property(
     (
         sa_exp.select(sa_func.count(Like.user_id))
