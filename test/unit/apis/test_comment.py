@@ -5,10 +5,12 @@ from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
 from test.mock.user import create_user, create_owner
 from test.utils import search_board, search_post, search_comment
+from test.constants import (
+    COMMENT_CONTENT, 
+    UPDATED_COMMENT_CONTENT,
+    POST_TITLE,
+)
 
-COMMENT_CONTENT="This is a Comment Content for the test."
-UPDATED_COMMENT_CONTENT="This is a Updated Comment Content for the test."
-POST_TITLE="This is a Post Title for the test."
 
 class TestComment:
     @pytest_asyncio.fixture(scope="class", autouse=True)

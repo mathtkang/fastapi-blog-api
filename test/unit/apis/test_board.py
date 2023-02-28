@@ -5,10 +5,11 @@ from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
 from test.mock.user import create_user, create_owner
 from test.utils import search_board
+from test.constants import (
+    BOARD_TITLE, 
+    UPDATED_BOARD_TITLE,
+)
 
-
-BOARD_TITLE="This is a Board Title for the test."
-UPDATED_BOARD_TITLE="This is a Updated Board Title for the test."
 
 class TestBoard:
     # 테스트 함수 실행시, 필요한 미리 정의된 입력값
@@ -35,9 +36,8 @@ class TestBoard:
                 "Authorization": f"Bearer {owner_access_token}"
             }
         )
-
         assert response.status_code == 200
-        
+
 
     @pytest.mark.asyncio
     async def test_get_board(self, app_client: AsyncClient):

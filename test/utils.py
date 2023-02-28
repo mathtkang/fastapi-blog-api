@@ -3,10 +3,11 @@ from typing import Any
 from app.database import models as m
 from app.utils.ctx import AppCtx
 from sqlalchemy.sql import expression as sql_exp
-
-BOARD_TITLE="This is a Board Title for the test."
-POST_TITLE="This is a Post Title for the test."
-COMMENT_CONTENT="This is a Comment Content for the test."
+from test.constants import (
+    BOARD_TITLE, 
+    POST_TITLE, 
+    COMMENT_CONTENT,
+)
 
 
 async def search_board(app_client: AsyncClient, title: str) -> dict[str, Any]:

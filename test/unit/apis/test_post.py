@@ -4,14 +4,16 @@ from httpx import AsyncClient
 from app.settings import AppSettings
 from test.helper import with_app_ctx, ensure_fresh_env
 from test.mock.user import create_user, create_owner
+from test.mock.board import create_board
 from test.utils import search_board, search_post
-from test.unit.apis.test_board import TestBoard
+from test.constants import (
+    BOARD_TITLE, 
+    POST_TITLE, 
+    UPDATED_POST_TITLE,
+    POST_CONTENT,
+    UPDATED_POST_CONTENT
+)
 
-BOARD_TITLE="This is a Board Title for the test."
-POST_TITLE="This is a Post Title for the test."
-UPDATED_POST_TITLE="This is a Updated Post Title for the test."
-POST_CONTENT="This is a Post Content for the test. #hashtag"
-UPDATED_POST_CONTENT="This is a Updated Post Content for the test. #add_hashtag"
 
 class TestPost:
     @pytest_asyncio.fixture(scope="class", autouse=True)
@@ -28,12 +30,8 @@ class TestPost:
 
     @pytest.mark.asyncio
     async def test_create_post(self, app_client: AsyncClient, owner_access_token: str):
-        await TestBoard().test_create_board(app_client=app_client, owner_access_token=owner_access_token)
-
-        board_id = (
-            await search_board(app_client, BOARD_TITLE)
-        )['id']
-
+        board_id = await create_board(app_client, owner_access_token)
+        # raise Exception(type(board_id))
         response = await app_client.post(
             "/posts/",
             json={
@@ -45,7 +43,6 @@ class TestPost:
                 "Authorization": f"Bearer {owner_access_token}"
             }
         )
-
         assert response.status_code == 200
 
 
