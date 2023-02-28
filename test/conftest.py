@@ -30,12 +30,16 @@ def event_loop() -> Iterator[AbstractEventLoop]:
 @pytest_asyncio.fixture(scope="class")
 async def app_client(app_settings: AppSettings) -> AsyncIterator[AsyncClient]:
     app = create_app(app_settings)
+
+    # app: 요청을 보낼 앱 (목적지) / base_url: 요청을 보내는 url의 기초
     async with AsyncClient(
-        app=app,
-        base_url="http://test"
-    ) as app_client, LifespanManager(app):
+        app=app, base_url="http://test",
+    ) as app_client, LifespanManager(app):  
+        # LifespanManager: 앱을 실행시켜 줌 & with 구문이 끝날때 종료해줌 (수명주기관리자)
         yield app_client
-        
+        # 이 함수를 호출한 함수에게 반환값을 넘겨주고, stack에서 지워지지 않음
+        # 이후 next func의 파라미터로 넘겨지면 다시 함수 실행, yield가 없으면 종료
+
 
 @pytest_asyncio.fixture(scope="class")
 async def user_access_token(app_client: AsyncClient) -> str:
@@ -52,6 +56,7 @@ async def user_access_token(app_client: AsyncClient) -> str:
     return response.json()['access_token']  # body에 담긴 값을 json으로 인식, dict 형으로 반환
 
 
+# 클래스 안의 테스트 함수에서 파라미터로 'owner_access_token'를 불러오면 해당 함수 실행
 @pytest_asyncio.fixture(scope="class")
 async def owner_access_token(app_client: AsyncClient) -> str:
     response = await app_client.post(

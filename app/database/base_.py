@@ -14,6 +14,8 @@ from sqlalchemy.orm.session import Session
 
 
 # ModelMeta 사용하려면, alembic > env.py 에서 설정 해줘야함
+# 내가 만든 모델이 어떤 모델이 있는지에 대해 SQLalchemy & alembic 이 알고 싶어 함
+# 모델 만들떄는 같은 metadata에서 생성해야한다.
 ModelMeta: DeclarativeMeta = declarative_base()
 
 
