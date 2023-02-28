@@ -20,7 +20,7 @@ class GetPostResponse(BaseModel):
     content: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    written_user_id: int
+    written_user_id: int | None
     board_id: int
     like_cnt: int
 
@@ -65,7 +65,6 @@ class SearchPostRequest(BaseModel):
 class SearchPostResponse(BaseModel):
     posts: list[GetPostResponse]
     count: int
-    message: str | None
 
 
 # DONE
@@ -91,41 +90,34 @@ async def search_post(
     )
 
     # [sorting way1) dictionary]
-    sort_by_column = {
-        "created_at": m.Post.created_at,
-        "updated_at": m.Post.updated_at,
-    }[q.sort_by]
+    # sort_by_column = {
+    #     "created_at": m.Post.created_at,
+    #     "updated_at": m.Post.updated_at,
+    # }[q.sort_by]
 
-    sort_exp = {
-        "asc": sort_by_column.asc(),
-        "desc": sort_by_column.desc(),
-    }[q.sort_direction]
+    # sort_exp = {
+    #     "asc": sort_by_column.asc(),
+    #     "desc": sort_by_column.desc(),
+    # }[q.sort_direction]
 
-    post_query = post_query.order_by(sort_exp)
+    # post_query = post_query.order_by(sort_exp)
 
     # [sorting way2) getattr() method]
-    # post_query = post_query.order_by(
-    #     getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
-    # )
-    # if q.sort_direction == "asc":
-    #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).asc())
-    # else:
-    #     post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
+    post_query = post_query.order_by(
+        getattr(getattr(m.Post, q.sort_by), q.sort_direction)()
+    )
+    if q.sort_direction == "asc":
+        post_query = post_query.order_by(getattr(m.Post, q.sort_by).asc())
+    else:
+        post_query = post_query.order_by(getattr(m.Post, q.sort_by).desc())
 
     post_query = post_query.offset(q.offset).limit(q.count)
     posts = (await AppCtx.current.db.session.scalars(post_query)).all()
 
-    if post_cnt == 0:
-        return SearchPostResponse(
-            posts=[GetPostResponse.from_orm(post) for post in posts],
-            count=post_cnt,
-            message="Can't find a post that meets the requirements. Please try again.",
-        )
-    else:
-        return SearchPostResponse(
-            posts=[GetPostResponse.from_orm(post) for post in posts],
-            count=post_cnt,
-        )
+    return SearchPostResponse(
+        posts=[GetPostResponse.from_orm(post) for post in posts],
+        count=post_cnt,
+    )
 
 
 class PostPostRequest(BaseModel):
