@@ -1,7 +1,7 @@
-from fastapi import FastAPI
 import uvicorn
-from app.settings import AppSettings
+from fastapi import FastAPI
 from app import create_app
+from app.settings import AppSettings
 
 
 app_settings = AppSettings()
