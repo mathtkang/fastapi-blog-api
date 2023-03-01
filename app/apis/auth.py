@@ -1,23 +1,24 @@
-from fastapi import Depends, APIRouter, HTTPException
+import os
 import re
+import time
+
+import dotenv
+import jwt
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.sql import expression as sql_exp
-from starlette.status import HTTP_409_CONFLICT, HTTP_400_BAD_REQUEST
-import jwt, time
+from starlette.status import HTTP_400_BAD_REQUEST
+
 from app.database import models as m
 from app.utils.auth import (
-    generate_hashed_password, 
-    validate_hashed_password,
+    generate_hashed_password,
     validate_email_exist,
+    validate_hashed_password,
 )
-from app.utils.ctx import AppCtx
-import dotenv
-import os
-
+from app.utils.ctx import Context
 
 dotenv_file = dotenv.find_dotenv()
 dotenv.load_dotenv(dotenv_file)
-
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,13 +50,10 @@ async def signup(q: AuthRequest):
 
     await validate_email_exist(q.email)
 
-    user = m.User(
-        email=q.email, 
-        password= await generate_hashed_password(q.password)
-    )
+    user = m.User(email=q.email, password= await generate_hashed_password(q.password))
 
-    AppCtx.current.db.session.add(user)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(user)
+    await Context.current.db.session.commit()
 
 
 class LoginResponse(BaseModel):
@@ -64,7 +62,7 @@ class LoginResponse(BaseModel):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(q: AuthRequest):
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.email == q.email)
     )
 

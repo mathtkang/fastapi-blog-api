@@ -1,29 +1,30 @@
 from __future__ import annotations
-import uuid
-import boto3
-import logging
+
 import contextlib
-from typing import TYPE_CHECKING, NamedTuple
-from mypy_boto3_s3 import S3Client
+import logging
+import uuid
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING, AsyncIterator, NamedTuple
+
+import boto3
+from mypy_boto3_s3 import S3Client
 
 if TYPE_CHECKING:
-    from app.settings import AppSettings
     from app.database.db import DbConn
+    from app.settings import AppSettings
 
 logger = logging.getLogger(__name__)
 
-_current_app_ctx: ContextVar[AppCtx] = ContextVar("_current_app_ctx")
+_current_context: ContextVar[Context] = ContextVar("_current_context")
 
-class _current_app_ctx_getter:
+class _current_context_getter:
     def __get__(self, obj, objtype=None):  # type: ignore
-        return _current_app_ctx.get()
+        return _current_context.get()
 
 
-class AppCtx(NamedTuple):
+class Context(NamedTuple):
     if TYPE_CHECKING:  # type: ignore
-        current: AppCtx
+        current: Context
 
     settings: AppSettings
     db: DbConn
@@ -32,10 +33,10 @@ class AppCtx(NamedTuple):
     id: str | None = None
 
 
-async def create_app_ctx(app_settings: AppSettings) -> AppCtx:
+async def create_app_ctx(app_settings: AppSettings) -> Context:
     from app.database.db import DbConn
 
-    return AppCtx(
+    return Context(
         settings=app_settings,
         db=DbConn(app_settings.DATABASE_URL),
         s3=boto3.client(
@@ -48,8 +49,8 @@ async def create_app_ctx(app_settings: AppSettings) -> AppCtx:
 
 
 @contextlib.asynccontextmanager
-async def bind_app_ctx(app_ctx: AppCtx) -> AsyncIterator[None]:
-    ctx_token = _current_app_ctx.set(app_ctx._replace(id=str(uuid.uuid4())))  # 4
+async def bind_app_ctx(app_ctx: Context) -> AsyncIterator[None]:
+    ctx_token = _current_context.set(app_ctx._replace(id=str(uuid.uuid4())))  # 4
     try:
         yield  # 5
     finally:
@@ -58,7 +59,7 @@ async def bind_app_ctx(app_ctx: AppCtx) -> AsyncIterator[None]:
         except Exception:
             logger.warning("Failed to clear scoped session", exc_info=True)
 
-        _current_app_ctx.reset(ctx_token)  # 9
+        _current_context.reset(ctx_token)  # 9
 
 
-AppCtx.current = _current_app_ctx_getter()  # type: ignore
+Context.current = _current_context_getter()  # type: ignore
