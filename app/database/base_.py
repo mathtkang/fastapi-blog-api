@@ -1,17 +1,14 @@
 from typing import TYPE_CHECKING
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.schema import Column, FetchedValue, Sequence
+
+from sqlalchemy import TIMESTAMP, Column
 from sqlalchemy import text as sql_text
-from sqlalchemy import Column, TIMESTAMP
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import object_session
-
-
+from sqlalchemy.orm.session import Session
+from sqlalchemy.schema import Column, FetchedValue, Sequence
 
 # if TYPE_CHECKING:
 from sqlalchemy.sql.schema import ColumnCollectionConstraint, MetaData, Table
-from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy.orm.session import Session
-
 
 # ModelMeta 사용하려면, alembic > env.py 에서 설정 해줘야함
 # 내가 만든 모델이 어떤 모델이 있는지에 대해 SQLalchemy & alembic 이 알고 싶어 함
