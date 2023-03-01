@@ -1,24 +1,25 @@
-from fastapi import Depends, APIRouter, HTTPException, UploadFile
+import datetime
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.sql import expression as sql_exp
+from sqlalchemy.sql import func as sql_func
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
-from typing import Literal
-import datetime
-from sqlalchemy.sql import func as sql_func
+
 from app.database import models as m
 from app.utils.auth import (
-    resolve_access_token, 
-    validate_user_role,
-    generate_hashed_password, 
-    validate_hashed_password,
+    generate_hashed_password,
+    resolve_access_token,
     validate_email_exist,
+    validate_hashed_password,
+    validate_user_role,
 )
-from app.utils.blob import upload_profile_img, get_image_url
-from app.utils.ctx import AppCtx
+from app.utils.blob import get_image_url, upload_profile_img
+from app.utils.ctx import Context
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -48,16 +49,16 @@ async def get_user(
     user_id: int,
     my_user_id: int = Depends(resolve_access_token),
 ) -> GetUserResponse:
-    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)  # Owner = 50
+    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)
 
-    user: m.User = await AppCtx.current.db.session.scalar(
+    user: m.User = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
 
     if user is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"There is no User whose user_id is {user_id}. Please try again."
+            detail=f"There is no User whose user_id is {user_id}. Please try again.",
         )
 
     return GetUserResponse.from_orm(user)
@@ -85,7 +86,7 @@ async def search_user(
     q: SearchUserRequest,
     my_user_id: int = Depends(resolve_access_token),
 ):
-    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)  # Owner = 50
+    await validate_user_role(my_user_id, m.UserRoleEnum.Owner)
 
     user_query = sql_exp.select(m.User)
 
@@ -94,8 +95,8 @@ async def search_user(
     if q.role is not None:
         user_query = user_query.where(m.User.role == q.role)
 
-    user_cnt: int = await AppCtx.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(user_query)
+    user_cnt: int = await Context.current.db.session.scalar(
+        sql_exp.select(sql_func.count()).select_from(user_query)  # ?
     )
 
     sort_by_column = {
@@ -109,7 +110,7 @@ async def search_user(
     user_query = user_query.order_by(sort_exp)
 
     user_query = user_query.offset(q.offset).limit(q.count)
-    users = (await AppCtx.current.db.session.scalars(user_query)).all()
+    users = (await Context.current.db.session.scalars(user_query)).all()
 
     for user in users:
         if user.profile_file_key is not None:
@@ -126,14 +127,14 @@ async def search_user(
 async def get_my_profile(
     my_user_id: int = Depends(resolve_access_token),
 ):
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
     if user is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"User not found."
+            detail=f"User not found.",
         )
     
     if user.profile_file_key is not None:
@@ -150,7 +151,7 @@ async def get_my_profile(
 
     # DONE: get_image_url()로 분리
     # if user.profile_file_key is not None:
-    #     user.profile_file_url = AppCtx.current.s3.generate_presigned_url(
+    #     user.profile_file_url = Context.current.s3.generate_presigned_url(
     #         "get_object",  # object를 가져오는 명령어 (변하지 않음))
     #         Params={
     #             "Bucket": "fastapi-practice",  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
@@ -180,7 +181,7 @@ async def post_user_profile_img(
     4. 사용자의 입력(file)
     """
 
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
@@ -198,8 +199,8 @@ async def post_user_profile_img(
     
     user.profile_file_key = profile_file_key
 
-    AppCtx.current.db.session.add(user)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(user)
+    await Context.current.db.session.commit()
 
     return PostAttachmentResponse(
         bucket=DEFAULT_BUCKET_NAME, 
@@ -220,7 +221,7 @@ async def update_me(
 ):
     await validate_email_exist(q.email)
 
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
@@ -232,10 +233,8 @@ async def update_me(
     
     user.email = q.email
 
-    AppCtx.current.db.session.add(user)
-    await AppCtx.current.db.session.commit()
-
-
+    Context.current.db.session.add(user)
+    await Context.current.db.session.commit()
 
 
 class PostPasswordRequest(BaseModel):
@@ -249,20 +248,20 @@ async def change_password(
     q: PostPasswordRequest,
     my_user_id: int = Depends(resolve_access_token),
 ):
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
     if not await validate_hashed_password(q.old_password, user.password):
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST, detail="Your password is incorrect."
+            status_code=HTTP_400_BAD_REQUEST, 
+            detail="Your password is incorrect.",
         )
 
     user.password = await generate_hashed_password(q.new_password)
 
-    AppCtx.current.db.session.add(user)
-    await AppCtx.current.db.session.commit()
-
+    Context.current.db.session.add(user)
+    await Context.current.db.session.commit()
 
 
 class PostRoleRequest(BaseModel):
@@ -278,14 +277,14 @@ async def change_user_role(
 ):
     await validate_user_role(my_user_id, m.UserRoleEnum.Owner)
 
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == q.user_id)
     )
 
     user.role = q.role
 
-    AppCtx.current.db.session.add(user)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(user)
+    await Context.current.db.session.commit()
 
 
 # DONE: 스스로 탈퇴하기 (권한은 all)
@@ -293,12 +292,12 @@ async def change_user_role(
 async def delete_self(
     my_user_id: int = Depends(resolve_access_token),
 ):
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
-    await AppCtx.current.db.session.delete(user)
-    await AppCtx.current.db.session.commit()
+    await Context.current.db.session.delete(user)
+    await Context.current.db.session.commit()
 
 
 # DONE: (Owner 권한으로) 다른 유저 탈퇴시키기
@@ -309,11 +308,11 @@ async def delete_user(
 ):
     await validate_user_role(my_user_id, m.UserRoleEnum.Owner)
 
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
 
-    await AppCtx.current.db.session.delete(user)
-    await AppCtx.current.db.session.commit()
+    await Context.current.db.session.delete(user)
+    await Context.current.db.session.commit()
 
 

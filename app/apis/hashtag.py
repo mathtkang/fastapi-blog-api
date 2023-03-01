@@ -1,15 +1,17 @@
-from fastapi import Depends, HTTPException, APIRouter
-from sqlalchemy.sql import expression as sql_exp
-from pydantic import BaseModel
 import datetime
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 import re
 from typing import Literal
-from sqlalchemy.sql import func as sql_func
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from app.utils.auth import resolve_access_token, validate_user_role
+from sqlalchemy.sql import expression as sql_exp
+from sqlalchemy.sql import func as sql_func
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+
 from app.database import models as m
-from app.utils.ctx import AppCtx
+from app.utils.auth import resolve_access_token, validate_user_role
+from app.utils.ctx import Context
 
 router = APIRouter(prefix="/hashtag", tags=["hashtag"])
 
@@ -48,8 +50,8 @@ async def search_hashtag(
     if q.name is not None:
         hashtag_query = hashtag_query.where(m.Hashtag.name.ilike(q.name))
 
-    hashtag_cnt: int = await AppCtx.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(hashtag_query)
+    hashtag_cnt: int = await Context.current.db.session.scalar(
+        sql_exp.select(sql_func.count()).select_from(hashtag_query)  # ?
     )
 
     hashtag_query = hashtag_query.order_by(
@@ -61,7 +63,7 @@ async def search_hashtag(
         hashtag_query = hashtag_query.order_by(getattr(m.Hashtag, q.sort_by).desc())
 
     hashtag_query = hashtag_query.offset(q.offset).limit(q.count)
-    hashtags = (await AppCtx.current.db.session.scalars(hashtag_query)).all()
+    hashtags = (await Context.current.db.session.scalars(hashtag_query)).all()
 
     return SearchHashtagResponse(
         hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],

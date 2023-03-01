@@ -1,13 +1,15 @@
-from fastapi import Depends, HTTPException, APIRouter
-from sqlalchemy.sql import expression as sql_exp
-from pydantic import BaseModel
 import datetime
-from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.sql import expression as sql_exp
 from sqlalchemy.sql import func as sql_func
-from app.utils.auth import resolve_access_token, validate_user_role
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+
 from app.database import models as m
-from app.utils.ctx import AppCtx
+from app.utils.auth import resolve_access_token, validate_user_role
+from app.utils.ctx import Context
 
 router = APIRouter(prefix="/boards", tags=["boards"])
 
@@ -34,12 +36,15 @@ class GetBoardResponse(BaseModel):
 async def get_board(
     board_id: int
 ):
-    board: m.Board = await AppCtx.current.db.session.scalar(
+    board: m.Board = await Context.current.db.session.scalar(
         sql_exp.select(m.Board).where(m.Board.id == board_id)
     )
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Board ID as {board_id} is not found.")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail=f"Board ID as {board_id} is not found."
+        )
 
     return GetBoardResponse.from_orm(board)
 
@@ -64,9 +69,7 @@ class SearchBoardResponse(BaseModel):
 
 
 @router.post("/search")
-async def search_board(
-    q: SearchBoardRequest
-):
+async def search_board(q: SearchBoardRequest):
     board_query = sql_exp.select(m.Board)
 
     if q.written_user_id is not None:
@@ -74,8 +77,9 @@ async def search_board(
     if q.title is not None:
         board_query = board_query.where(m.Board.title.ilike(q.title))
 
-    board_cnt: int = await AppCtx.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(board_query)
+    board_cnt: int = await Context.current.db.session.scalar(
+        # sql_exp.select(sql_func.count()).select_from(board_query)
+        sql_exp.select(sql_func.count()).select_from(board_query.subquery())  # after
     )
 
     board_query = board_query.order_by(
@@ -115,16 +119,17 @@ async def create_board(
         written_user_id=user_id,
     )
 
-    is_title_exist = await AppCtx.current.db.session.scalar(
+    is_title_exist = await Context.current.db.session.scalar(
         sql_exp.exists().where(m.Board.title == q.title).select()
     )
     if is_title_exist:
         raise HTTPException(
-            status_code=HTTP_409_CONFLICT, detail="This board title already exists."
+            status_code=HTTP_409_CONFLICT, 
+            detail="This board title already exists."
         )
 
-    AppCtx.current.db.session.add(board)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(board)
+    await Context.current.db.session.commit()
 
     return PostBoardResponse(board_id=board.id)
 
@@ -138,27 +143,29 @@ async def update_board(
     await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     board: m.Board | None = (
-        await AppCtx.current.db.session.execute(
+        await Context.current.db.session.execute(
             sql_exp.select(m.Board).where(m.Board.id == board_id)
         )
     ).scalar_one_or_none()
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail="Board not found.",
+        )
     
     if board.written_user_id != user_id:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, 
-            detail="This is not your board. Therefore, it cannot be updated."
+            detail="This is not your board. Therefore, it cannot be updated.",
         )
 
     board.title = q.title
 
-    AppCtx.current.db.session.add(board)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(board)
+    await Context.current.db.session.commit()
 
 
-# TODO: 만약 보드를 삭제했을 때 관련된 하위(post) 다 삭제되는지 확인
 @router.delete("/{board_id:int}")
 async def delete_board(
     board_id: int,
@@ -167,19 +174,22 @@ async def delete_board(
     await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
     board: m.Board | None = (
-        await AppCtx.current.db.session.execute(
+        await Context.current.db.session.execute(
             sql_exp.select(m.Board).where(m.Board.id == board_id)
         )
     ).scalar_one_or_none()
 
     if board is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Board not found.")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail="Board not found.",
+        )
 
     if board.written_user_id != user_id:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, 
-            detail="This is not your board. Therefore, it cannot be deleted."
+            detail="This is not your board. Therefore, it cannot be deleted.",
         )
 
-    await AppCtx.current.db.session.delete(board)
-    await AppCtx.current.db.session.commit()
+    await Context.current.db.session.delete(board)
+    await Context.current.db.session.commit()

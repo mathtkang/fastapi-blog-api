@@ -1,13 +1,15 @@
-from fastapi import Depends, HTTPException, APIRouter
+import datetime
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.sql import expression as sql_exp
 from sqlalchemy.sql import func as sql_func
-from pydantic import BaseModel, Field
-import datetime
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
-from typing import Literal
-from app.utils.auth import resolve_access_token, validate_user_role
+from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+
 from app.database import models as m
-from app.utils.ctx import AppCtx
+from app.utils.auth import resolve_access_token, validate_user_role
+from app.utils.ctx import Context
 
 router = APIRouter(prefix="/posts/{post_id:int}/comments", tags=["comments"])
 
@@ -31,7 +33,7 @@ async def get_comment(
     post_id: int,
     comment_id: int,
 ):
-    comment: m.Comment = await AppCtx.current.db.session.scalar(
+    comment: m.Comment = await Context.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
         )
@@ -75,14 +77,18 @@ async def search_comments(
     if q.content is not None:
         comment_query = comment_query.where(m.Comment.content.ilike(q.content))
     if q.written_user_id is not None:
-        comment_query = comment_query.where(m.Comment.written_user_id == q.written_user_id)
+        comment_query = comment_query.where(
+            m.Comment.written_user_id == q.written_user_id
+        )
     if post_id is not None:
         comment_query = comment_query.where(m.Comment.post_id == post_id)
     if q.parent_comment_id is not None:
-        comment_query = comment_query.where(m.Comment.parent_comment_id == q.parent_comment_id)
+        comment_query = comment_query.where(
+            m.Comment.parent_comment_id == q.parent_comment_id
+        )
 
-    comment_cnt: int = await AppCtx.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(comment_query)
+    comment_cnt: int = await Context.current.db.session.scalar(
+        sql_exp.select(sql_func.count()).select_from(comment_query)  # ?
     )
 
     comment_query = comment_query.order_by(
@@ -93,9 +99,8 @@ async def search_comments(
     else:
         comment_query = comment_query.order_by(getattr(m.Comment, q.sort_by).desc())
 
-
     comment_query = comment_query.offset(q.offset).limit(q.count)
-    comments = (await AppCtx.current.db.session.scalars(comment_query)).all()
+    comments = (await Context.current.db.session.scalars(comment_query)).all()
 
     return SearchCommentResponse(
         comments=[GetCommentResponse.from_orm(comment) for comment in comments],
@@ -127,8 +132,8 @@ async def create_comment(
         parent_comment_id=q.parent_comment_id,
     )
 
-    AppCtx.current.db.session.add(comment)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(comment)
+    await Context.current.db.session.commit()
 
     return PostCommentResponse(comment_id=comment.id)
 
@@ -143,25 +148,28 @@ async def update_comment(
 ):
     await validate_user_role(user_id, m.UserRoleEnum.Admin)
 
-    comment: m.Comment | None = await AppCtx.current.db.session.scalar(
+    comment: m.Comment | None = await Context.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
         )
     )
 
     if comment is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Comment not found.")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail="Comment not found.",
+        )
 
     if comment.written_user_id != user_id:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, 
-            detail="This is not your comment. Therefore, it cannot be updated."
+            detail="This is not your comment. Therefore, it cannot be updated.",
         )
 
     comment.content = q.content
 
-    AppCtx.current.db.session.add(comment)
-    await AppCtx.current.db.session.commit()
+    Context.current.db.session.add(comment)
+    await Context.current.db.session.commit()
 
 
 # DONE: parent_comment_id 삭제 시, children_comment도 삭제 확인 완료
@@ -173,20 +181,23 @@ async def delete_comment(
 ):
     await validate_user_role(user_id, m.UserRoleEnum.Admin)
     
-    comment: m.Comment | None = await AppCtx.current.db.session.scalar(
+    comment: m.Comment | None = await Context.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
         )
     )
 
     if comment is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Comment not found.")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail="Comment not found.",
+        )
 
     if comment.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, 
-            detail="This is not your comment. Therefore, it cannot be deleted."
+            status_code=HTTP_403_FORBIDDEN,
+            detail="This is not your comment. Therefore, it cannot be deleted.",
         )
 
-    await AppCtx.current.db.session.delete(comment)
-    await AppCtx.current.db.session.commit()
+    await Context.current.db.session.delete(comment)
+    await Context.current.db.session.commit()
