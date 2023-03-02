@@ -33,6 +33,7 @@ python-dotenv = "^0.21.1"
 contextvars = "^2.4"
 async-property = "^0.2.1"
 uvloop = "^0.17.0"
+flake8-isort = "^6.0.0"
 
 
 [build-system]
