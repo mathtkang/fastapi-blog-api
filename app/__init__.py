@@ -1,12 +1,14 @@
-from fastapi import FastAPI, Request, Response
-from .settings import AppSettings
-from .apis import ALL_ROUTERS
 import functools
-from app.utils.ctx import AppCtx, create_app_ctx, bind_app_ctx
 import logging
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+
+from app.utils.ctx import Context, bind_context, create_app_ctx
+
+from .apis import ALL_ROUTERS
+from .settings import AppSettings
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,9 @@ def create_app(app_settings: AppSettings) -> FastAPI:
     app.add_event_handler(
         "startup", functools.partial(_web_app_startup, app, app_settings)
     )
-    app.add_event_handler("shutdown", functools.partial(_web_app_shutdown, app))
+    app.add_event_handler(
+        "shutdown", functools.partial(_web_app_shutdown, app)
+    )
 
     # router Definition
     for api_router in ALL_ROUTERS:
@@ -45,7 +49,7 @@ async def _web_app_startup(app: FastAPI, app_settings: AppSettings) -> None:
     async def _ctx_middleware(
         request: Request, call_next: RequestResponseEndpoint  
     ) -> Response:
-        async with bind_app_ctx(app_ctx):  # 3
+        async with bind_context(app_ctx):  # 3
             response = await call_next(request)  # 6
         return response
 
@@ -53,7 +57,7 @@ async def _web_app_startup(app: FastAPI, app_settings: AppSettings) -> None:
 
 
 async def _web_app_shutdown(app: FastAPI) -> None:
-    app_ctx: AppCtx = app.extra["_app_ctx"]
+    app_ctx: Context = app.extra["_app_ctx"]
 
     try:
         await app_ctx.db.engine.dispose()
