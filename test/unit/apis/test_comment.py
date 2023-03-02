@@ -1,7 +1,12 @@
-from test.constants import COMMENT_CONTENT, UPDATED_COMMENT_CONTENT, POST_TITLE
+from test.constants import (
+    COMMENT_CONTENT, 
+    UPDATED_COMMENT_CONTENT, 
+    POST_TITLE,
+)
 from test.helper import with_app_ctx, ensure_fresh_env
+from test.mock.obj import create_board_obj, create_post_obj
 from test.mock.user import create_user, create_owner
-from test.utils import search_board, search_post, search_comment
+from test.utils import search_post, search_comment
 
 import pytest
 import pytest_asyncio
@@ -19,14 +24,15 @@ class TestComment:
     ) -> None:
         async with with_app_ctx(app_settings):
             await ensure_fresh_env()
-            await create_user(app_client)
+            await create_user(app_client=app_client)
             await create_owner(app_client=app_client)
 
     @pytest.mark.asyncio
     async def test_create_comment(
         self, app_client: AsyncClient, owner_access_token: str
     ):
-        post_id = (await search_post(app_client, POST_TITLE))["id"]
+        board_id = await create_board_obj(app_client, owner_access_token)
+        post_id = await create_post_obj(app_client, owner_access_token, board_id)
 
         # parent_comment_id가 없는 경우
         response = await app_client.post(
@@ -39,7 +45,7 @@ class TestComment:
         assert response.status_code == 200
 
         # parent_comment_id가 있는 경우 (위에서 생성되었기 때문에 아래가 실행될 수 있다)
-        parent_comment_id = response.json()["id"]
+        parent_comment_id = response.json()["comment_id"]
 
         response = await app_client.post(
             f"/posts/{post_id}/comments/",
@@ -71,7 +77,7 @@ class TestComment:
         post_id = (await search_post(app_client, POST_TITLE))["id"]
         comment_id = (await search_comment(app_client, COMMENT_CONTENT))["id"]
 
-        response = await app_client.post(
+        response = await app_client.put(
             f"/posts/{post_id}/comments/{comment_id}",
             json={"content": UPDATED_COMMENT_CONTENT},
             headers={"Authorization": f"Bearer {owner_access_token}"},
