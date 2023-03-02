@@ -66,7 +66,7 @@ async def get_user(
 
 class SearchUserRequest(BaseModel):
     # filter (query parameters)
-    email: str | None
+    email: str
     role: int | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] = "created_at"

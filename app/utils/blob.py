@@ -48,7 +48,7 @@ async def upload_profile_img(
     
 #     return await loop.run_in_executor(
 #         _executor,
-#         AppCtx.current.s3.generate_presigned_url,
+#         Context.current.s3.generate_presigned_url,
 #         "get_object",
 #         Params={
 #             "Bucket": DEFAULT_BUCKET_NAME,  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
