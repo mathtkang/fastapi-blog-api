@@ -1,13 +1,15 @@
-import pytest_asyncio
+from test.helper import ensure_fresh_env, with_app_ctx
+from test.mock.user import create_owner, create_user
+
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
+
 from app.settings import AppSettings
-from test.helper import with_app_ctx, ensure_fresh_env
-from test.mock.user import create_user, create_owner
 
+EMAIL = "user123@example.com"
+PASSWORD = "password1234!!"
 
-EMAIL="user123@example.com"
-PASSWORD="password1234!!"
 
 class TestAuth:
     @pytest_asyncio.fixture(scope="class", autouse=True)
@@ -21,7 +23,6 @@ class TestAuth:
             await create_user(app_client=app_client)
             await create_owner(app_client=app_client)
 
-
     @pytest.mark.asyncio
     async def test_signup(self, app_client: AsyncClient) -> None:
         response = await app_client.post(
@@ -32,7 +33,6 @@ class TestAuth:
             },
         )
         assert response.status_code == 200
-
 
     @pytest.mark.asyncio
     async def test_login(self, app_client: AsyncClient):
