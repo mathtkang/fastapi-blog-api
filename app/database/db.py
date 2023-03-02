@@ -1,19 +1,18 @@
 import uuid
-import asyncpg
 from asyncio import current_task
-from sqlalchemy import create_engine
-from sqlalchemy.sql import expression as sa_exp
-from sqlalchemy import text
-from sqlalchemy.orm import sessionmaker
+
+import asyncpg
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
-    create_async_engine,
     async_scoped_session,
+    create_async_engine,
 )
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import expression as sa_exp
 
-from app.utils.ctx import AppCtx
+from app.utils.ctx import Context
 
 
 # [before]
@@ -46,7 +45,9 @@ async def _asyncpg_prepare(  # type: ignore
 
 class DbConn:
     def __init__(self, db_uri: str) -> None:
-        self.engine: AsyncEngine = create_async_engine(db_uri)  # db 세션 관리 방법
+        self.engine: AsyncEngine = create_async_engine(
+            db_uri,
+        )  # db 세션 관리 방법
     
         asyncpg.Connection.prepare = _asyncpg_prepare
 
@@ -58,7 +59,7 @@ class DbConn:
                 autoflush=False,
                 expire_on_commit=False,
             ),
-            scopefunc=lambda: AppCtx.current.id,  # session 발급 단위 (lambda: 익명함수)
+            scopefunc=lambda: Context.current.id,  # session 발급 단위 (lambda: 익명함수)
             # echo=False,  # for performance analysis
         )
 

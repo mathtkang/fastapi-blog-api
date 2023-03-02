@@ -49,7 +49,7 @@ async def create_app_ctx(app_settings: AppSettings) -> Context:
 
 
 @contextlib.asynccontextmanager
-async def bind_app_ctx(app_ctx: Context) -> AsyncIterator[None]:
+async def bind_context(app_ctx: Context) -> AsyncIterator[None]:
     ctx_token = _current_context.set(app_ctx._replace(id=str(uuid.uuid4())))  # 4
     try:
         yield  # 5

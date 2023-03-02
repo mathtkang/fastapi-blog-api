@@ -1,8 +1,13 @@
-import hashlib, os, binascii, jwt
+import asyncio
+import binascii
 import dataclasses
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import hashlib
+import os
+from concurrent.futures import ThreadPoolExecutor
+
+import jwt
 from fastapi import Depends, HTTPException
-from app.database import models as m
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.sql import expression as sql_exp
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
@@ -10,10 +15,9 @@ from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from app.utils.ctx import AppCtx
 
+from app.database import models as m
+from app.utils.ctx import Context
 
 _PBKDF2_HASH_NAME = "SHA256"
 _PBKDF2_ITERATIONS = 100_000
@@ -80,22 +84,22 @@ async def validate_hashed_password(password: str, hashed_password: str) -> bool:
 def validate_access_token(access_token: str) -> int:
     try:
         payload = jwt.decode(
-            access_token, 
-            "secret", 
+            access_token,
+            "secret",
             algorithms=["HS256"],
-            issuer="fastapi-practice"
-        )  # jwt 검증
+            issuer="fastapi-practice",
+        )
+    # 만료된 경우
     except jwt.ExpiredSignatureError:
-        # 만료된 경우
         raise AuthUtilError(
             code="jwt_expired", 
-            message="jwt expired please try reauthenticate"
+            message="jwt expired please try reauthenticate",
         )
+    # 여기 토큰이 아닌 경우
     except jwt.InvalidIssuerError:
-        # 여기 토큰이 아닌 경우
         raise AuthUtilError(
             code="jwt_invalid_issuer",
-            message="jwt token is not issued from this service"
+            message="jwt token is not issued from this service",
         )
     except Exception:
         raise AuthUtilError(
@@ -114,14 +118,14 @@ def validate_access_token(access_token: str) -> int:
 
 
 def resolve_access_token(
-    credentials: HTTPAuthorizationCredentials = Depends(user_auth_scheme)
+    credentials: HTTPAuthorizationCredentials = Depends(user_auth_scheme),
 ) -> int:
     return validate_access_token(credentials.credentials)
 
 
 
 async def validate_email_exist(email: str):
-    is_email_exist = await AppCtx.current.db.session.scalar(
+    is_email_exist = await Context.current.db.session.scalar(
         sql_exp.exists().where(m.User.email == email).select()
     )
     if is_email_exist:
@@ -132,12 +136,15 @@ async def validate_email_exist(email: str):
 
 
 async def validate_user_role(user_id: int, role: m.UserRoleEnum):
-    user: m.User | None = await AppCtx.current.db.session.scalar(
+    user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
 
     if user is None:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found.")
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail="User not found.",
+        )
 
     if user.role < role:
         raise HTTPException(
