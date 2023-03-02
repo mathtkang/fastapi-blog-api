@@ -112,6 +112,7 @@ class PostCommentRequest(BaseModel):
     content: str
     parent_comment_id: int | None  # optional
 
+
 class PostCommentResponse(BaseModel):
     comment_id: int
 
@@ -156,13 +157,13 @@ async def update_comment(
 
     if comment is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="Comment not found.",
         )
 
     if comment.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, 
+            status_code=HTTP_403_FORBIDDEN,
             detail="This is not your comment. Therefore, it cannot be updated.",
         )
 
@@ -180,7 +181,7 @@ async def delete_comment(
     user_id: int = Depends(resolve_access_token),
 ):
     await validate_user_role(user_id, m.UserRoleEnum.Admin)
-    
+
     comment: m.Comment | None = await Context.current.db.session.scalar(
         sql_exp.select(m.Comment).where(
             (m.Comment.post_id == post_id) & (m.Comment.id == comment_id)
@@ -189,7 +190,7 @@ async def delete_comment(
 
     if comment is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="Comment not found.",
         )
 

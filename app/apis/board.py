@@ -33,17 +33,15 @@ class GetBoardResponse(BaseModel):
 
 
 @router.get("/{board_id}")
-async def get_board(
-    board_id: int
-):
+async def get_board(board_id: int):
     board: m.Board = await Context.current.db.session.scalar(
         sql_exp.select(m.Board).where(m.Board.id == board_id)
     )
 
     if board is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
-            detail=f"Board ID as {board_id} is not found."
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Board ID as {board_id} is not found.",
         )
 
     return GetBoardResponse.from_orm(board)
@@ -124,8 +122,7 @@ async def create_board(
     )
     if is_title_exist:
         raise HTTPException(
-            status_code=HTTP_409_CONFLICT, 
-            detail="This board title already exists."
+            status_code=HTTP_409_CONFLICT, detail="This board title already exists."
         )
 
     Context.current.db.session.add(board)
@@ -150,13 +147,13 @@ async def update_board(
 
     if board is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="Board not found.",
         )
-    
+
     if board.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, 
+            status_code=HTTP_403_FORBIDDEN,
             detail="This is not your board. Therefore, it cannot be updated.",
         )
 
@@ -181,13 +178,13 @@ async def delete_board(
 
     if board is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="Board not found.",
         )
 
     if board.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, 
+            status_code=HTTP_403_FORBIDDEN,
             detail="This is not your board. Therefore, it cannot be deleted.",
         )
 

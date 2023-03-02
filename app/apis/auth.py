@@ -24,16 +24,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 PASSWORD_REGEX = (
-    r'^('
-    r'(?=.*{letters})(?=.*{digits})(?=.*{specials})'
-    r'|(?=.*{letters})(?=.*{digits})'
-    r'|(?=.*{letters})(?=.*{specials})'
-    r'|(?=.*{digits})(?=.*{specials})'
-    r').{{8,}}$'
+    r"^("
+    r"(?=.*{letters})(?=.*{digits})(?=.*{specials})"
+    r"|(?=.*{letters})(?=.*{digits})"
+    r"|(?=.*{letters})(?=.*{specials})"
+    r"|(?=.*{digits})(?=.*{specials})"
+    r").{{8,}}$"
 ).format(
-    letters='[a-zA-Z]',
-    digits='[0-9]',
-    specials='''[~`!@#$%^&*()=+[{\]}\\|;:'",<.>/?_-]''',
+    letters="[a-zA-Z]",
+    digits="[0-9]",
+    specials="""[~`!@#$%^&*()=+[{\]}\\|;:'",<.>/?_-]""",
 )
 
 
@@ -50,7 +50,7 @@ async def signup(q: AuthRequest):
 
     await validate_email_exist(q.email)
 
-    user = m.User(email=q.email, password= await generate_hashed_password(q.password))
+    user = m.User(email=q.email, password=await generate_hashed_password(q.password))
 
     Context.current.db.session.add(user)
     await Context.current.db.session.commit()

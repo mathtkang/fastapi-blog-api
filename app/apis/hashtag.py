@@ -24,6 +24,7 @@ class GetHashtagResponse(BaseModel):
     class Config:
         orm_mode = True
 
+
 class SearchHashtagRequest(BaseModel):
     # filter (query parameters)
     name: str | None
@@ -69,6 +70,3 @@ async def search_hashtag(
         hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],
         count=hashtag_cnt,
     )
-
-
-#create <- at content of create_post 

@@ -1,4 +1,4 @@
-from pydantic import BaseSettings, PostgresDsn, Field
+from pydantic import BaseSettings, Field, PostgresDsn
 
 class AppSettings(BaseSettings):
     DATABASE_URL: PostgresDsn = Field(
