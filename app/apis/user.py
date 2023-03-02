@@ -36,7 +36,7 @@ class GetUserResponse(BaseModel):
     # 에러발생: profile_file_url의 타입이 (예상되는 type인 str과) 다르다. (그래서 다른 방법으로 구현)
     profile_file_url: str | None
 
-    # 만약 profile_file_url이 not None이라서 불러오는 경우, 
+    # 만약 profile_file_url이 not None이라서 불러오는 경우,
     # models.py에 있는 @property가 실행되면서, get_image_url 함수 실행됨
 
     class Config:
@@ -74,6 +74,7 @@ class SearchUserRequest(BaseModel):
     # pagination
     offset: int = 0
     count: int = 20
+
 
 class SearchUserResponse(BaseModel):
     users: list[GetUserResponse]
@@ -136,15 +137,16 @@ async def get_my_profile(
             status_code=HTTP_404_NOT_FOUND,
             detail=f"User not found.",
         )
-    
+
     if user.profile_file_key is not None:
         # TypeError: BaseEventLoop.run_in_executor() got an unexpected keyword argument 'Params'
         # user.profile_file_url = await get_image_url(user.profile_file_key)  # ERROR
         user.profile_file_url = get_image_url(user.profile_file_key)  # DONE
-    
+
     return GetUserResponse.from_orm(user)
 
-'''
+
+"""
     # if user.profile_file_key is not None:
     #     user.profile_file_url = await get_image_url(user.profile_file_key)
 
@@ -159,7 +161,7 @@ async def get_my_profile(
     #         },
     #         ExpiresIn=60 * 60 * 24,  # a one day
     #     )
-'''
+"""
 
 
 class PostAttachmentResponse(BaseModel):
@@ -196,14 +198,14 @@ async def post_user_profile_img(
         profile_file.filename,
         profile_file.file,  # file_object
     )
-    
+
     user.profile_file_key = profile_file_key
 
     Context.current.db.session.add(user)
     await Context.current.db.session.commit()
 
     return PostAttachmentResponse(
-        bucket=DEFAULT_BUCKET_NAME, 
+        bucket=DEFAULT_BUCKET_NAME,
         key=profile_file_key,
     )
 
@@ -230,7 +232,7 @@ async def update_me(
             status_code=HTTP_404_NOT_FOUND,
             detail=f"User not found.",
         )
-    
+
     user.email = q.email
 
     Context.current.db.session.add(user)
@@ -254,7 +256,7 @@ async def change_password(
 
     if not await validate_hashed_password(q.old_password, user.password):
         raise HTTPException(
-            status_code=HTTP_400_BAD_REQUEST, 
+            status_code=HTTP_400_BAD_REQUEST,
             detail="Your password is incorrect.",
         )
 
@@ -314,5 +316,3 @@ async def delete_user(
 
     await Context.current.db.session.delete(user)
     await Context.current.db.session.commit()
-
-

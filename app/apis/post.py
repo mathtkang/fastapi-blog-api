@@ -46,8 +46,8 @@ async def get_post(
 
     if post is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
-            detail=f"The post with {post_id} could not be found."
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"The post with {post_id} could not be found.",
         )
 
     return GetPostResponse.from_orm(post)
@@ -81,7 +81,9 @@ async def search_post(
     post_query = sql_exp.select(m.Post).options(undefer(m.Post.like_cnt))  # after
 
     if q.like_user_id is not None:
-        post_query = post_query.join(m.Post.likes).where(m.Like.user_id == q.like_user_id)
+        post_query = post_query.join(m.Post.likes).where(
+            m.Like.user_id == q.like_user_id
+        )
     if q.written_user_id is not None:
         post_query = post_query.where(m.Post.written_user_id == q.written_user_id)
     if q.board_id is not None:
@@ -130,11 +132,12 @@ class PostPostRequest(BaseModel):
     content: str
     board_id: int
 
+
 class PostPostResponse(BaseModel):
     post_id: int
 
 
-# DONE: Hashtag 잘 적재되는지 확인 완료! 
+# DONE: Hashtag 잘 적재되는지 확인 완료!
 # (Context 앞에 await 안 붙여줘서 coroutine의 속성으로 인식 못한거임)
 @router.post("/")
 async def create_post(
@@ -192,13 +195,13 @@ async def update_post(
 
     if post is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="This post not found.",
         )
 
     if post.written_user_id != user_id:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, 
+            status_code=HTTP_403_FORBIDDEN,
             detail="This is not your post. Therefore, it cannot be updated.",
         )
 
@@ -223,7 +226,7 @@ async def delete_post(
 
     if post is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="This post not found.",
         )
 
@@ -254,7 +257,7 @@ async def like_post(
 
     if post is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="This Post not found.",
         )
 
@@ -266,8 +269,7 @@ async def like_post(
 
     if like is not None:
         return LikeResponse(
-            post_id=post_id,
-            message="This post has already been liked."
+            post_id=post_id, message="This post has already been liked."
         )
 
     like = m.Like(
@@ -293,7 +295,7 @@ async def like_delete(
 
     if post is None:
         raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND, 
+            status_code=HTTP_404_NOT_FOUND,
             detail="This Post not found.",
         )
 
@@ -305,8 +307,7 @@ async def like_delete(
 
     if like is None:
         return LikeResponse(
-            post_id=post_id,
-            message="This post has already been marked as unliked."
+            post_id=post_id, message="This post has already been marked as unliked."
         )
 
     await Context.current.db.session.delete(like)

@@ -39,7 +39,9 @@ class Board(ModelBase):
     id = Column(Integer, primary_key=True)
     title = Column(String(150), nullable=False, unique=True)
     written_user_id = Column(Integer, ForeignKey("user.id"), index=True, nullable=False)
-    written_user = relationship("User", uselist=False)  # relationship: orm 에서만, db에 들어가지 않음
+    written_user = relationship(
+        "User", uselist=False
+    )  # relationship: orm 에서만, db에 들어가지 않음
     posts = relationship("Post", uselist=True, back_populates="board", cascade="all")
 
     def __repr__(self):
@@ -122,10 +124,10 @@ class Comment(ModelBase):
     parent_comment_id = Column(Integer, ForeignKey("comment.id"), index=True)
     # parent_comment = relationship("Comment", uselist=False)
     children_comment = relationship(
-        "Comment", 
-        uselist=True, 
-        backref=backref("parent_comment", remote_side=[id]), 
-        cascade="all"
+        "Comment",
+        uselist=True,
+        backref=backref("parent_comment", remote_side=[id]),
+        cascade="all",
     )
 
 
