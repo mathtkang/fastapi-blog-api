@@ -32,6 +32,7 @@ async def create_owner(app_client: AsyncClient) -> None:
         },
     )
 
+    # updated user role, user to owner
     user = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.email == DEFAULT_OWNER_EMAIL)
     )

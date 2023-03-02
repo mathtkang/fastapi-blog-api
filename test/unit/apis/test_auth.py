@@ -7,7 +7,7 @@ from httpx import AsyncClient
 
 from app.settings import AppSettings
 
-EMAIL = "user123@example.com"
+EMAIL = "authtest@example.com"
 PASSWORD = "password1234!!"
 
 
