@@ -89,7 +89,7 @@ async def search_board(q: SearchBoardRequest):
         board_query = board_query.order_by(getattr(m.Board, q.sort_by).desc())
 
     board_query = board_query.offset(q.offset).limit(q.count)
-    boards = (await AppCtx.current.db.session.scalars(board_query)).all()
+    boards = (await Context.current.db.session.scalars(board_query)).all()
 
     return SearchBoardResponse(
         boards=[GetBoardResponse.from_orm(board) for board in boards],
