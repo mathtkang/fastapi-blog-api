@@ -12,12 +12,16 @@ from app.database import models as m
 from app.utils.ctx import Context
 
 
-async def create_user(app_client: AsyncClient) -> None:
+async def create_user(
+    app_client: AsyncClient,
+    email: str = DEFAULT_USER_EMAIL,
+    password: str = DEFAULT_USER_PASSWORD,
+) -> dict:
     response = await app_client.post(
         "/auth/signup",
         json={
-            "email": DEFAULT_USER_EMAIL,
-            "password": DEFAULT_USER_PASSWORD,
+            "email": email,
+            "password": password,
         },
     )
     return response
