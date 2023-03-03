@@ -88,7 +88,7 @@ async def search_comments(
         )
 
     comment_cnt: int = await Context.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(comment_query)  # ?
+        sql_exp.select(sql_func.count()).select_from(comment_query.subquery())
     )
 
     comment_query = comment_query.order_by(

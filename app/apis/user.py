@@ -97,7 +97,7 @@ async def search_user(
         user_query = user_query.where(m.User.role == q.role)
 
     user_cnt: int = await Context.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(user_query)  # ?
+        sql_exp.select(sql_func.count()).select_from(user_query.subquery())
     )
 
     sort_by_column = {
@@ -121,47 +121,6 @@ async def search_user(
         users=[GetUserResponse.from_orm(user) for user in users],
         count=user_cnt,
     )
-
-
-# DONE: 본인 프로필 불러오기
-@router.get("/me")
-async def get_my_profile(
-    my_user_id: int = Depends(resolve_access_token),
-):
-    user: m.User | None = await Context.current.db.session.scalar(
-        sql_exp.select(m.User).where(m.User.id == my_user_id)
-    )
-
-    if user is None:
-        raise HTTPException(
-            status_code=HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
-        )
-
-    if user.profile_file_key is not None:
-        # TypeError: BaseEventLoop.run_in_executor() got an unexpected keyword argument 'Params'
-        # user.profile_file_url = await get_image_url(user.profile_file_key)  # ERROR
-        user.profile_file_url = get_image_url(user.profile_file_key)  # DONE
-
-    return GetUserResponse.from_orm(user)
-
-
-"""
-    # if user.profile_file_key is not None:
-    #     user.profile_file_url = await get_image_url(user.profile_file_key)
-
-
-    # DONE: get_image_url()로 분리
-    # if user.profile_file_key is not None:
-    #     user.profile_file_url = Context.current.s3.generate_presigned_url(
-    #         "get_object",  # object를 가져오는 명령어 (변하지 않음))
-    #         Params={
-    #             "Bucket": "fastapi-practice",  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
-    #             "Key": user.profile_file_key,  
-    #         },
-    #         ExpiresIn=60 * 60 * 24,  # a one day
-    #     )
-"""
 
 
 class PostAttachmentResponse(BaseModel):
@@ -208,6 +167,47 @@ async def post_user_profile_img(
         bucket=DEFAULT_BUCKET_NAME,
         key=profile_file_key,
     )
+
+
+# DONE: 본인 프로필 불러오기
+@router.get("/me")
+async def get_my_profile(
+    my_user_id: int = Depends(resolve_access_token),
+):
+    user: m.User | None = await Context.current.db.session.scalar(
+        sql_exp.select(m.User).where(m.User.id == my_user_id)
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"User not found.",
+        )
+
+    if user.profile_file_key is not None:
+        # TypeError: BaseEventLoop.run_in_executor() got an unexpected keyword argument 'Params'
+        # user.profile_file_url = await get_image_url(user.profile_file_key)  # ERROR
+        user.profile_file_url = get_image_url(user.profile_file_key)  # DONE
+
+    return GetUserResponse.from_orm(user)
+
+
+"""
+    # if user.profile_file_key is not None:
+    #     user.profile_file_url = await get_image_url(user.profile_file_key)
+
+
+    # DONE: get_image_url()로 분리
+    # if user.profile_file_key is not None:
+    #     user.profile_file_url = Context.current.s3.generate_presigned_url(
+    #         "get_object",  # object를 가져오는 명령어 (변하지 않음))
+    #         Params={
+    #             "Bucket": "fastapi-practice",  # 서버에서 버킷 안 보냄(db의 테이블과 같은 의미)
+    #             "Key": user.profile_file_key,  
+    #         },
+    #         ExpiresIn=60 * 60 * 24,  # a one day
+    #     )
+"""
 
 
 class PutUserRequest(BaseModel):
@@ -287,6 +287,8 @@ async def change_user_role(
 
     Context.current.db.session.add(user)
     await Context.current.db.session.commit()
+
+
 
 
 # DONE: 스스로 탈퇴하기 (권한은 all)
