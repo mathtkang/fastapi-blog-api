@@ -55,7 +55,7 @@ async def search_comment(
     return response.json()["comments"][0]
 
 
-async def search_user(app_client: AsyncClient, email: str) -> dict[str, Any]:
+async def search_user(app_client: AsyncClient, email: str, owner_access_token: str) -> dict[str, Any]:
     response = await app_client.post(
         "/user/search",
         json={
@@ -63,5 +63,6 @@ async def search_user(app_client: AsyncClient, email: str) -> dict[str, Any]:
             "offset": 0,
             "count": 1,
         },
+        headers={"Authorization": f"Bearer {owner_access_token}"},
     )
     return response.json()["users"][0]
