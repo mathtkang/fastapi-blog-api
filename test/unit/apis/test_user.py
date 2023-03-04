@@ -1,7 +1,4 @@
-from test.constants import (
-    DEFAULT_USER_EMAIL,
-    DEFAULT_USER_PASSWORD,
-)
+from test.constants import DEFAULT_USER_EMAIL, DEFAULT_USER_PASSWORD
 from test.helper import ensure_fresh_env, with_app_ctx
 from test.mock.user import create_owner, create_user
 from test.utils import search_user
@@ -9,9 +6,9 @@ from test.utils import search_user
 import pytest
 import pytest_asyncio
 from _pytest.monkeypatch import MonkeyPatch
-from fastapi import UploadFile
 from httpx import AsyncClient
 
+from app.apis import user
 from app.database import models as m
 from app.settings import AppSettings
 
@@ -19,8 +16,6 @@ UPDATED_USER_EMAIL = "updated_user@example.com"
 NEW_PASSWORD = "new_password1234!!"
 OTHER_USER_EMAIL = "other_user@example.com"
 OTHER_USER_PASSWORD = "other_password1234!!"
-
-ProfileFile: UploadFile
 
 
 class TestUser:
@@ -58,14 +53,35 @@ class TestUser:
 
     @pytest.mark.asyncio
     async def test_post_user_profile_img(
-        app_client: AsyncClient, user_access_token: str
+        self,
+        app_client: AsyncClient,
+        user_access_token: str,
+        monkeypatch: MonkeyPatch,
     ):
+        async def _func(*args, **kwargs) -> str:
+            return "attachment_key"
+        
+        with monkeypatch.context() as mp:
+            mp.setattr(user, "upload_profile_img", _func)
+
+            with open('test/mock/assets/sample_profile.png', 'rb') as f:
+                response = await app_client.post(
+                    "/user/profile_img",
+                    files={"profile_file": f},
+                    headers={"Authorization": f"Bearer {user_access_token}"},
+                )
+                assert response.status_code == 200
+                assert response.json()['key'] == "attachment_key"
+
+        
         '''
-        TODO
+        DONE
         1. mock 에 미리 저장해둔다.
         2. 실제 s3에 올리지 않도록 함수 'upload_profile_img(in blob)'을 monkeypatch 한다.
+        (파이썬 실행 시 상대경로)
+        content-type, multipart
         '''
-        pass
+        
 
     @pytest.mark.asyncio
     async def test_get_my_profile(self, app_client: AsyncClient, user_access_token: str):
