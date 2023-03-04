@@ -10,11 +10,11 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:35000:5432"
-  redis:
-    image: redis:latest
-    ports:
-      - "127.0.0.1:35100:6379"
-    command: redis-server --save ""
+  # redis:
+  #   image: redis:latest
+  #   ports:
+  #     - "127.0.0.1:35100:6379"
+  #   command: redis-server --save ""
 
 volumes:
   postgres-data:
