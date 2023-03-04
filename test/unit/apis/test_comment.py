@@ -1,12 +1,8 @@
-from test.constants import (
-    COMMENT_CONTENT, 
-    UPDATED_COMMENT_CONTENT, 
-    POST_TITLE,
-)
-from test.helper import with_app_ctx, ensure_fresh_env
+from test.constants import COMMENT_CONTENT, POST_TITLE, UPDATED_COMMENT_CONTENT
+from test.helper import ensure_fresh_env, with_app_ctx
 from test.mock.obj import create_board_obj, create_post_obj
-from test.mock.user import create_user, create_owner
-from test.utils import search_post, search_comment
+from test.mock.user import create_owner, create_user
+from test.utils import search_comment, search_post
 
 import pytest
 import pytest_asyncio

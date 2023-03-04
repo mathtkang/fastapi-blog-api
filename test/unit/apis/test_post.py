@@ -1,10 +1,5 @@
-from test.constants import (
-    BOARD_TITLE,
-    POST_CONTENT,
-    POST_TITLE,
-    UPDATED_POST_CONTENT,
-    UPDATED_POST_TITLE,
-)
+from test.constants import (BOARD_TITLE, POST_CONTENT, POST_TITLE,
+                            UPDATED_POST_CONTENT, UPDATED_POST_TITLE)
 from test.helper import ensure_fresh_env, with_app_ctx
 from test.mock.obj import create_board_obj, create_post_obj
 from test.mock.user import create_owner, create_user
