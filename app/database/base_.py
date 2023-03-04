@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import TIMESTAMP, Column
 from sqlalchemy import text as sql_text
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-from sqlalchemy.orm import object_session
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import object_session, declarative_base
 from sqlalchemy.orm.session import Session
 from sqlalchemy.schema import Column, FetchedValue, Sequence
 
