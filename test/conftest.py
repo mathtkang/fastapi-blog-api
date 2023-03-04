@@ -1,10 +1,6 @@
 from asyncio import AbstractEventLoop
-from test.constants import (
-    DEFAULT_OWNER_EMAIL,
-    DEFAULT_OWNER_PASSWORD,
-    DEFAULT_USER_EMAIL,
-    DEFAULT_USER_PASSWORD,
-)
+from test.constants import (DEFAULT_OWNER_EMAIL, DEFAULT_OWNER_PASSWORD,
+                            DEFAULT_USER_EMAIL, DEFAULT_USER_PASSWORD)
 from typing import AsyncIterator, Iterator
 
 import pytest

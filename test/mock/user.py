@@ -1,9 +1,5 @@
-from test.constants import (
-    DEFAULT_OWNER_EMAIL,
-    DEFAULT_OWNER_PASSWORD,
-    DEFAULT_USER_EMAIL,
-    DEFAULT_USER_PASSWORD,
-)
+from test.constants import (DEFAULT_OWNER_EMAIL, DEFAULT_OWNER_PASSWORD,
+                            DEFAULT_USER_EMAIL, DEFAULT_USER_PASSWORD)
 
 from httpx import AsyncClient
 from sqlalchemy.sql import expression as sql_exp

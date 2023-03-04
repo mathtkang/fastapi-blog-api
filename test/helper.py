@@ -3,7 +3,7 @@ from typing import AsyncIterator
 
 from app.database.base_ import ModelBase
 from app.settings import AppSettings
-from app.utils.ctx import Context, create_app_ctx, bind_context
+from app.utils.ctx import Context, bind_context, create_app_ctx
 
 
 @contextlib.asynccontextmanager

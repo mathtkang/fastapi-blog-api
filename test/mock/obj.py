@@ -1,8 +1,4 @@
-from test.constants import (
-    BOARD_TITLE, 
-    POST_TITLE,
-    POST_CONTENT,
-)
+from test.constants import BOARD_TITLE, POST_CONTENT, POST_TITLE
 
 from httpx import AsyncClient
 from sqlalchemy.sql import expression as sql_exp
