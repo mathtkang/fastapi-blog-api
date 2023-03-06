@@ -1,4 +1,4 @@
-# fastapi-practice
+# fastapi-blog
 fastapi로 만든 blog 입니다.
 
 
@@ -81,8 +81,8 @@ fastapi로 만든 blog 입니다.
 ## Setting steps
 
 0. `pip install pyenv poetry`
-1. `pyenv virtualenv (python-version) fastapi-practice` > create virtual-env
-3. `pyenv local fastapi-practice` > set python-version in virtual-env
+1. `pyenv virtualenv (python-version) fastapi-blog` > create virtual-env
+3. `pyenv local fastapi-blog` > set python-version in virtual-env
 
 ## Set-up steps
 
