@@ -1,5 +1,4 @@
 import os
-import re
 import time
 
 import dotenv
@@ -7,7 +6,7 @@ import jwt
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.sql import expression as sql_exp
-from starlette.status import HTTP_400_BAD_REQUEST
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 
 from app.database import models as m
 from app.utils.auth import (
@@ -67,7 +66,7 @@ async def login(q: AuthRequest):
     )
 
     if user is None:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="user not found")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found.")
 
     if not await validate_hashed_password(q.password, user.password):
         raise HTTPException(
