@@ -91,6 +91,12 @@ async def search_board(q: SearchBoardRequest):
     board_query = board_query.offset(q.offset).limit(q.count)
     boards = (await Context.current.db.session.scalars(board_query)).all()
 
+    if board_cnt == 0:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Not found any board matching your request.",
+        )
+
     return SearchBoardResponse(
         boards=[GetBoardResponse.from_orm(board) for board in boards],
         count=board_cnt,
