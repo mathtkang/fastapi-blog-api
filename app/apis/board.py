@@ -76,8 +76,7 @@ async def search_board(q: SearchBoardRequest):
         board_query = board_query.where(m.Board.title.ilike(q.title))
 
     board_cnt: int = await Context.current.db.session.scalar(
-        # sql_exp.select(sql_func.count()).select_from(board_query)
-        sql_exp.select(sql_func.count()).select_from(board_query.subquery())  # after
+        sql_exp.select(sql_func.count()).select_from(board_query.subquery())
     )
 
     board_query = board_query.order_by(
@@ -128,7 +127,8 @@ async def create_board(
     )
     if is_title_exist:
         raise HTTPException(
-            status_code=HTTP_409_CONFLICT, detail="This board title already exists."
+            status_code=HTTP_409_CONFLICT, 
+            detail="This board title already exists."
         )
 
     Context.current.db.session.add(board)
@@ -154,7 +154,7 @@ async def update_board(
     if board is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail="Board not found.",
+            detail=f"Cannot find board with board_id as {board_id}",
         )
 
     if board.written_user_id != user_id:
@@ -185,7 +185,7 @@ async def delete_board(
     if board is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail="Board not found.",
+            detail=f"Cannot find board with board_id as {board_id}",
         )
 
     if board.written_user_id != user_id:
