@@ -43,7 +43,7 @@ class GetUserResponse(BaseModel):
         orm_mode = True
 
 
-# DONE: (user_id가 있을 때) 원하는 user의 정보 가져오기 찾기
+# 원하는 user의 정보 가져오기 찾기 (user_id 이용)
 @router.get("/{user_id:int}")
 async def get_user(
     user_id: int,
@@ -66,7 +66,7 @@ async def get_user(
 
 class SearchUserRequest(BaseModel):
     # filter (query parameters)
-    email: str
+    email: str | None
     role: int | None
     # sort
     sort_by: Literal["created_at"] | Literal["updated_at"] = "created_at"
@@ -81,7 +81,7 @@ class SearchUserResponse(BaseModel):
     count: int
 
 
-# DONE: 유저에 대한 search (+ get_img_url)
+# 유저에 대한 search (+ get_img_url)
 @router.post("/search")
 async def search_user(
     q: SearchUserRequest,
@@ -116,6 +116,12 @@ async def search_user(
     for user in users:
         if user.profile_file_key is not None:
             user.profile_file_url = get_image_url(user.profile_file_key)
+
+    if user_cnt == 0:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Not found any user matching your request.",
+        )
 
     return SearchUserResponse(
         users=[GetUserResponse.from_orm(user) for user in users],
@@ -181,7 +187,7 @@ async def get_my_profile(
     if user is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
+            detail="User not found.",
         )
 
     if user.profile_file_key is not None:
@@ -214,8 +220,7 @@ class PutUserRequest(BaseModel):
     email: str
 
 
-# DONE: 본인 프로필 업데이트 하기 (현재 email만)
-# question: put으로 한번 더 UploadFile 하는게 의미 있는가? (의미 없음 그래서 안 함!)
+# 본인 프로필 업데이트 하기 (현재 email만)
 @router.put("/me")
 async def update_me(
     q: PutUserRequest,
@@ -230,7 +235,7 @@ async def update_me(
     if user is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
+            detail="User not found.",
         )
 
     user.email = q.email
@@ -244,7 +249,6 @@ class PostPasswordRequest(BaseModel):
     new_password: str
 
 
-# DONE
 @router.put("/change-password")
 async def change_password(
     q: PostPasswordRequest,
@@ -253,6 +257,12 @@ async def change_password(
     user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
+
+    if user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
 
     if not await validate_hashed_password(q.old_password, user.password):
         raise HTTPException(
@@ -283,6 +293,12 @@ async def change_user_role(
         sql_exp.select(m.User).where(m.User.id == q.user_id)
     )
 
+    if user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
     user.role = q.role
 
     Context.current.db.session.add(user)
@@ -291,8 +307,8 @@ async def change_user_role(
 
 
 
-# DONE: 스스로 탈퇴하기 (권한은 all)
-@router.delete("/")
+# 스스로 탈퇴하기
+@router.delete("/me")
 async def delete_self(
     my_user_id: int = Depends(resolve_access_token),
 ):
@@ -300,11 +316,17 @@ async def delete_self(
         sql_exp.select(m.User).where(m.User.id == my_user_id)
     )
 
+    if user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
     await Context.current.db.session.delete(user)
     await Context.current.db.session.commit()
 
 
-# DONE: (Owner 권한으로) 다른 유저 탈퇴시키기
+# (Owner 권한으로) 다른 유저 탈퇴시키기
 @router.delete("/{user_id:int}")
 async def delete_user(
     user_id: int,
@@ -315,6 +337,12 @@ async def delete_user(
     user: m.User | None = await Context.current.db.session.scalar(
         sql_exp.select(m.User).where(m.User.id == user_id)
     )
+
+    if user is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"There is no User whose user_id is {user_id}. Please try again.",
+        )
 
     await Context.current.db.session.delete(user)
     await Context.current.db.session.commit()
