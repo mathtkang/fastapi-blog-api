@@ -41,7 +41,6 @@ class SearchHashtagResponse(BaseModel):
     count: int  # total number of hashtags (not saved to db)
 
 
-# DONE
 @router.post("/search")
 async def search_hashtag(
     q: SearchHashtagRequest,
