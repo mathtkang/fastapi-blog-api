@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import undefer
 from sqlalchemy.sql import expression as sql_exp
 from sqlalchemy.sql import func as sql_func
-from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from app.database import models as m
 from app.utils.auth import resolve_access_token, validate_user_role
@@ -31,7 +31,6 @@ class GetPostResponse(BaseModel):
         orm_mode = True
 
 
-# DONE
 @router.get("/{post_id}")
 async def get_post(
     post_id: int,
@@ -72,7 +71,6 @@ class SearchPostResponse(BaseModel):
     count: int
 
 
-# DONE
 @router.post("/search")
 async def search_post(
     q: SearchPostRequest,
@@ -121,6 +119,12 @@ async def search_post(
     post_query = post_query.offset(q.offset).limit(q.count)
     posts = (await Context.current.db.session.scalars(post_query)).all()
 
+    if post_cnt == 0:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Not found any post matching your request.",
+        )
+
     return SearchPostResponse(
         posts=[GetPostResponse.from_orm(post) for post in posts],
         count=post_cnt,
@@ -137,7 +141,7 @@ class PostPostResponse(BaseModel):
     post_id: int
 
 
-# DONE: Hashtag 잘 적재되는지 확인 완료!
+# Hashtag 잘 적재되는지 확인 완료!
 # (Context 앞에 await 안 붙여줘서 coroutine의 속성으로 인식 못한거임)
 @router.post("/")
 async def create_post(
@@ -157,28 +161,29 @@ async def create_post(
 
     # create hashtag
     content = q.content
-    pattern = "#([0-9a-zA-Z가-힣]*)"
-    hashtags = re.compile(pattern).findall(content)  # type: list
+    if content.find('#') != -1:  # is exist hashtag
+        pattern = "#([0-9a-zA-Z가-힣]*)"
+        hashtags = re.compile(pattern).findall(content)  # type: list
 
-    await Context.current.db.session.execute(
-        pg_insert(m.Hashtag)
-        .values([{"name": hashtag} for hashtag in hashtags])
-        .on_conflict_do_nothing()  # This is only available with postgresql
-    )
-    """
-    INSERT INTO hashtag
-    VALUES (name) (
-        'code',
-        'camp',
-    )
-    ON CONFLICT DO NOTHING;
-    """
+        await Context.current.db.session.execute(
+            pg_insert(m.Hashtag)
+            .values([{"name": hashtag} for hashtag in hashtags])
+            .on_conflict_do_nothing()  # This is only available with postgresql
+        )
+        """
+        INSERT INTO hashtag
+        VALUES (name) (
+            'code',
+            'camp',
+        )
+        ON CONFLICT DO NOTHING;
+        """
+
     await Context.current.db.session.commit()
 
     return PostPostResponse(post_id=post.id)
 
 
-# DONE
 @router.put("/{post_id:int}")
 async def update_post(
     post_id: int,
@@ -196,7 +201,7 @@ async def update_post(
     if post is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail="This post not found.",
+            detail=f"Cannot find post with post_id as {post_id}",
         )
 
     if post.written_user_id != user_id:
@@ -212,7 +217,6 @@ async def update_post(
     await Context.current.db.session.commit()
 
 
-# DONE
 @router.delete("/{post_id:int}")
 async def delete_post(
     post_id: int,
@@ -242,10 +246,8 @@ async def delete_post(
 
 class LikeResponse(BaseModel):
     post_id: int
-    message: str | None
 
 
-# DONE
 @router.post("/{post_id:int}/like")
 async def like_post(
     post_id: int,
@@ -268,8 +270,9 @@ async def like_post(
     )
 
     if like is not None:
-        return LikeResponse(
-            post_id=post_id, message="This post has already been liked."
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail="This post has already been liked.",
         )
 
     like = m.Like(
@@ -283,7 +286,6 @@ async def like_post(
     return LikeResponse(post_id=like.post_id)
 
 
-# DONE
 @router.delete("/{post_id:int}/like")
 async def like_delete(
     post_id: int,
@@ -306,9 +308,10 @@ async def like_delete(
     )
 
     if like is None:
-        return LikeResponse(
-            post_id=post_id, message="This post has already been marked as unliked."
-        )
+        raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST,
+                detail="This post has already been marked as unliked."
+            )
 
     await Context.current.db.session.delete(like)
     await Context.current.db.session.commit()
