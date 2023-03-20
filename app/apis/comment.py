@@ -27,7 +27,6 @@ class GetCommentResponse(BaseModel):
         orm_mode = True
 
 
-# DONE
 @router.get("/{comment_id:int}")
 async def get_comment(
     post_id: int,
@@ -66,7 +65,6 @@ class SearchCommentResponse(BaseModel):
     count: int
 
 
-# DONE
 @router.post("/search")
 async def search_comments(
     post_id: int,
@@ -102,6 +100,12 @@ async def search_comments(
     comment_query = comment_query.offset(q.offset).limit(q.count)
     comments = (await Context.current.db.session.scalars(comment_query)).all()
 
+    if comment_cnt == 0:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Not found any comment matching your request.",
+        )
+
     return SearchCommentResponse(
         comments=[GetCommentResponse.from_orm(comment) for comment in comments],
         count=comment_cnt,
@@ -117,7 +121,6 @@ class PostCommentResponse(BaseModel):
     comment_id: int
 
 
-# DONE
 @router.post("/")
 async def create_comment(
     post_id: int,
@@ -125,6 +128,16 @@ async def create_comment(
     user_id: int = Depends(resolve_access_token),
 ):
     await validate_user_role(user_id, m.UserRoleEnum.Admin)
+
+    post: m.Post | None = await Context.current.db.session.scalar(
+        sql_exp.select(m.Board).where(m.Post.id == post_id)
+    )
+
+    if post is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Cannot find post with post_id as {post_id}",
+        )
 
     comment = m.Comment(
         post_id=post_id,
@@ -139,7 +152,6 @@ async def create_comment(
     return PostCommentResponse(comment_id=comment.id)
 
 
-# DONE
 @router.put("/{comment_id:int}")
 async def update_comment(
     post_id: int,
