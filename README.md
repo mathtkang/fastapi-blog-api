@@ -42,7 +42,7 @@ fastapi로 만든 blog 입니다.
 
 
 ## 📑 API Specification
-### [Api 명세서 보기](https://sprinkle-piccolo-9fc.notion.site/API-8f10817b6a1e41e085f356a24ca1c067)
+### [Api 명세서 보기](https://sprinkle-piccolo-9fc.notion.site/API-Specification-c49db5e76866417ba4ed7a8bbbc50fa3)
 
 ## PURPOSE of Project
 
