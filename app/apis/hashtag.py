@@ -42,16 +42,14 @@ class SearchHashtagResponse(BaseModel):
 
 
 @router.post("/search")
-async def search_hashtag(
-    q: SearchHashtagRequest,
-):
+async def search_hashtag(q: SearchHashtagRequest):
     hashtag_query = sql_exp.select(m.Hashtag)
 
     if q.name is not None:
         hashtag_query = hashtag_query.where(m.Hashtag.name.ilike(q.name))
 
     hashtag_cnt: int = await Context.current.db.session.scalar(
-        sql_exp.select(sql_func.count()).select_from(hashtag_query)  # ?
+        sql_exp.select(sql_func.count()).select_from(hashtag_query.subquery())
     )
 
     hashtag_query = hashtag_query.order_by(
@@ -64,6 +62,12 @@ async def search_hashtag(
 
     hashtag_query = hashtag_query.offset(q.offset).limit(q.count)
     hashtags = (await Context.current.db.session.scalars(hashtag_query)).all()
+
+    if hashtag_cnt == 0:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail=f"Not found any hashtag matching your request.",
+        )
 
     return SearchHashtagResponse(
         hashtags=[GetHashtagResponse.from_orm(hashtag) for hashtag in hashtags],

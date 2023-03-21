@@ -63,7 +63,7 @@ class SearchBoardRequest(BaseModel):
 
 class SearchBoardResponse(BaseModel):
     boards: list[GetBoardResponse]
-    count: int
+    count: int  # total number of boards (not saved to db)
 
 
 @router.post("/search")

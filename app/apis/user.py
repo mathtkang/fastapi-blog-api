@@ -78,7 +78,7 @@ class SearchUserRequest(BaseModel):
 
 class SearchUserResponse(BaseModel):
     users: list[GetUserResponse]
-    count: int
+    count: int  # total number of users (not saved to db)
 
 
 # 유저에 대한 search (+ get_img_url)
@@ -134,7 +134,7 @@ class PostAttachmentResponse(BaseModel):
     key: str
 
 
-# DONE: 본인 프로필 '이미지만' 생성하기
+# 본인 프로필 '이미지만' 생성하기
 @router.post("/profile_img")
 async def post_user_profile_img(
     profile_file: UploadFile,

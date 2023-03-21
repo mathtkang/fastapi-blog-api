@@ -62,7 +62,7 @@ class SearchCommentRequest(BaseModel):
 
 class SearchCommentResponse(BaseModel):
     comments: list[GetCommentResponse]
-    count: int
+    count: int  # total number of comments (not saved to db)
 
 
 @router.post("/search")
@@ -103,7 +103,7 @@ async def search_comments(
     if comment_cnt == 0:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail=f"Not found any comment matching your request.",
+            detail="Not found any comment matching your request.",
         )
 
     return SearchCommentResponse(
@@ -170,7 +170,7 @@ async def update_comment(
     if comment is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail="Comment not found.",
+            detail="Not found any comment matching your request.",
         )
 
     if comment.written_user_id != user_id:
@@ -185,7 +185,6 @@ async def update_comment(
     await Context.current.db.session.commit()
 
 
-# DONE: parent_comment_id 삭제 시, children_comment도 삭제 확인 완료
 @router.delete("/{comment_id:int}")
 async def delete_comment(
     post_id: int,
@@ -203,7 +202,7 @@ async def delete_comment(
     if comment is None:
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
-            detail="Comment not found.",
+            detail="Not found any comment matching your request.",
         )
 
     if comment.written_user_id != user_id:

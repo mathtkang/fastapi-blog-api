@@ -68,7 +68,7 @@ class SearchPostRequest(BaseModel):
 
 class SearchPostResponse(BaseModel):
     posts: list[GetPostResponse]
-    count: int
+    count: int  # total number of posts (not saved to db)
 
 
 @router.post("/search")
@@ -90,8 +90,7 @@ async def search_post(
         post_query = post_query.where(m.Post.title.ilike(q.title))
 
     post_cnt: int = await Context.current.db.session.scalar(
-        # sql_exp.select(sql_func.count()).select_from(post_query)
-        sql_exp.select(sql_func.count()).select_from(post_query.subquery())  # after
+        sql_exp.select(sql_func.count()).select_from(post_query.subquery())
     )
 
     # [sorting way1) dictionary]
@@ -214,6 +213,19 @@ async def update_post(
     post.content = q.content
 
     Context.current.db.session.add(post)
+
+    # create new hashtag
+    content = q.content
+    if content.find('#') != -1:  # is exist hashtag
+        pattern = "#([0-9a-zA-Z가-힣]*)"
+        hashtags = re.compile(pattern).findall(content)
+
+        await Context.current.db.session.execute(
+            pg_insert(m.Hashtag)
+            .values([{"name": hashtag} for hashtag in hashtags])
+            .on_conflict_do_nothing()
+        )
+
     await Context.current.db.session.commit()
 
 
