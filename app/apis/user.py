@@ -175,7 +175,7 @@ async def post_user_profile_img(
     )
 
 
-# DONE: 본인 프로필 불러오기
+# 본인 프로필 불러오기
 @router.get("/me")
 async def get_my_profile(
     my_user_id: int = Depends(resolve_access_token),
@@ -281,7 +281,6 @@ class PostRoleRequest(BaseModel):
     user_id: int
 
 
-# DONE
 @router.put("/role")
 async def change_user_role(
     q: PostRoleRequest,
@@ -303,8 +302,6 @@ async def change_user_role(
 
     Context.current.db.session.add(user)
     await Context.current.db.session.commit()
-
-
 
 
 # 스스로 탈퇴하기
