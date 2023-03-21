@@ -93,8 +93,8 @@ class TestPost:
 
     @pytest.mark.asyncio
     async def test_like_delete(self, app_client: AsyncClient, owner_access_token: str):
-        board_id = (await search_board(app_client, BOARD_TITLE))["id"] 
-        post_id = await create_post_obj(app_client, owner_access_token, board_id)
+        board_id = (await search_board(app_client, BOARD_TITLE))["id"]
+        post_id = (await search_post(app_client, POST_TITLE))["id"]
 
         response = await app_client.delete(
             f"/posts/{post_id}/like",

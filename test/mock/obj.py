@@ -20,7 +20,7 @@ async def create_board_obj(app_client: AsyncClient, owner_access_token: str) -> 
 
 
 async def create_post_obj(
-    app_client: AsyncClient, 
+    app_client: AsyncClient,
     owner_access_token: str, 
     board_id: int,
 ) -> int:

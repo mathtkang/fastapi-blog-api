@@ -131,7 +131,7 @@ class TestUser:
     async def test_delete_self(self, app_client: AsyncClient, user_access_token: str):
         '''Delete default_user self.'''
         response = await app_client.delete(
-            "/user/", 
+            "/user/me",
             headers={"Authorization": f"Bearer {user_access_token}"},
         )
         assert response.status_code == 200
