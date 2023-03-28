@@ -1,8 +1,5 @@
 FROM python:3.10
 
-FROM nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-
 RUN apt-get update && apt-get install -y python-pip
 
 COPY . /fastapi-blog
@@ -10,12 +7,10 @@ COPY . /fastapi-blog
 WORKDIR /fastapi-blog
 
 # 1. requirements.txt 이용해서 설치하는 방법
-COPY ./requirements.txt /requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /requirements.txt
+# COPY ./requirements.txt /requirements.txt
+# RUN pip install --no-cache-dir --upgrade -r /requirements.txt
 # 2. poetry 설치 후, poetry로 python package를 설치하는 방법
-# RUN pip install poetry
-# COPY poetry.lock pyproject.toml /fastapi-blog/
-# RUN poetry lock
-
+RUN pip install poetry
+RUN poetry install
 
 CMD ["python3", "main.py"]
