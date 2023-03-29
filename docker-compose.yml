@@ -11,13 +11,11 @@ services:
     ports:
       - "127.0.0.1:35000:5432"
   nginx:
-    image: nginx
+    image: nginx:latest
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     ports: 
       - "80:80"
-    environment:
-      - NGINX_PORT=80
   app:
     build: 
       context: ./
