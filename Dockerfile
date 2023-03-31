@@ -9,7 +9,6 @@ COPY . /fastapi-blog
 WORKDIR /fastapi-blog
 
 RUN pip3 install poetry
-RUN poetry shell
 RUN poetry install
 
 CMD ["poetry", "run", "python3", "main.py"]
