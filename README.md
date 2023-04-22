@@ -1,77 +1,94 @@
-# fastapi-blog
-fastapi로 만든 blog 입니다.
+# FastAPI-Blog
+
+## 📃 프로젝트 개요
+- 블로그 서비스의 API를 개발한 프로젝트입니다.
+- FastAPI, SQL로 만든 blog 입니다.
+- JWT토큰을 사용하여 회원가입, 로그인, 로그아웃 기능을 제공합니다.
+
+<!-- 게임의 구조를 알아보는 프로젝트입니다.
+JWT토큰을 사용하여 회원가입, 로그인, 로그아웃 기능을 제공합니다.
+redis queue를 이용해 특정 게임을 여러명의 유저들이 함께 사용할때 충돌이 일어나지 않게 설계하였습니다.
+레이드의 시작, 종료, 레이드 상태조회, 랭킹조회등을 제공합니다.
+랭킹조회시 redis 캐싱기능을 이용해 데이터베이스로의 직접적인 호출을 최소화 하였습니다. -->
 
 
+## ⚙️ 개발 환경
+- ![macosm1 badge](https://img.shields.io/badge/MacOS%20M1-000000.svg?style=flat&logo=macOS&logoColor=white)
+- ![Visual Studio Code badge](https://img.shields.io/badge/Visual%20Studio%20Code-007ACC.svg?style=flat&logo=Visual-Studio-Code&logoColor=white)
+- ![github badge](https://img.shields.io/badge/GitHub-181717.svg?style=flat&logo=GitHub&logoColor=white)
+- ![docker badge](https://img.shields.io/badge/Docker-2496ED.svg?style=flate&logo=Docker&logoColor=white)
+- ![postman badge](https://img.shields.io/badge/postman-FF6C37?style=flat&logo=Postman&logoColor=white)
+- ![swagger badge](https://img.shields.io/badge/Swagger-85EA2D.svg?style=flat&logo=Swagger&logoColor=black)
 
-
-
-## 개발 환경
-
-- MacOS M1
-- Visual Studio Code
-- GitHub
-- Docker
-
+## 🛠 사용 기술
 **Server**
-- Python 3.10
-- FastAPI
-- 
+- ![python badge](https://img.shields.io/badge/Python-3.10-%233776AB?&logo=python&logoColor=white)
+- ![fastapi badge](https://img.shields.io/badge/FastAPI-0.89-109989?style=flat&logo=FastAPI&logoColor=white)
+- ![Pydantic badge](https://img.shields.io/badge/Pydantic-1.10-109989?style=flat&logoColor=white)
+- ![pyjwt badge](https://img.shields.io/badge/PYJWT-2.6-000000?style=flat&logo=JSON%20web%20tokens&logoColor=white)
+- ![aws s3 badge](https://img.shields.io/badge/AWS-S3-FF9900?style=flat&logo=Amazon%20S3&logoColor=white)
+- ![pytest badge](https://img.shields.io/badge/Pytest-7.2.2-0A9EDC.svg?style=flat&logo=Pytest&logoColor=white)
 
 **Database**
-- PostgreSQL
+- ![Postgres badge](https://img.shields.io/badge/postgres-14.5-%23316192.svg?style=flat&logo=postgresql&logoColor=white)
+- ![SQLAlchemy badge](https://img.shields.io/badge/SQLAlchemy-2.0-109989?style=flat&logoColor=white)
+- ![Alembic badge](https://img.shields.io/badge/Alembic-1.10-109989?style=flat&logoColor=white)
 
-**Infra**
-- AWS EC2
-- AWS S3
-- Docker
+**Deploy**
+- ![aws ec2 badge](https://img.shields.io/badge/AWS-EC2-%23FF9900?&logo=Amazon%20EC2&logoColor=white)
+- ![docker badge](https://img.shields.io/badge/Docker-20.10.17-%232496ED?&logo=Docker&logoColor=white)
+- ![nginx badge](https://img.shields.io/badge/Nginx-1.23.0-%23009639?logo=NGINX&locoColor=white)
+- ![uvicorn badge](https://img.shields.io/badge/Uvicorn-0.20-499848.svg?style=flat&logo=Gunicorn&logoColor=white)
 
-
-**Library**
-- 
-
-## System Architecture
-![시스템 아키텍처]()
-
-
-## Server Architecture
-![아키텍처]()
-
-
-## E-R Diagram
-<img width="875" alt="스크린샷 2022-12-01 오후 4 31 42" src="https://user-images.githubusercontent.com/51039577/222684900-b9613635-aacd-4905-83bb-5a4586b4c2d8.png">
-
-
-## 📑 API Specification
-### [Api 명세서 보기](https://sprinkle-piccolo-9fc.notion.site/API-Specification-c49db5e76866417ba4ed7a8bbbc50fa3)
-
-## PURPOSE of Project
+<!-- <img src="https://img.shields.io/badge/JWT-000000?style=flat&logo=JSON%20web%20tokens&logoColor=white"/>
+<img src="https://img.shields.io/badge/Nginx-009639?style=flat&logo=nginx&logoColor=white"/>
+<img src="https://img.shields.io/badge/Gunicorn-499848?style=flat&logo=Gunicorn&logoColor=white"/> -->
 
 
 
-## Main function & 
-### 1. 게시글 CRUD
+<br>
+
+## 📙 API 명세서
+
+### 👉 [📑 API Specification](https://sprinkle-piccolo-9fc.notion.site/API-Specification-fastapi-blog-c49db5e76866417ba4ed7a8bbbc50fa3)
+
+<img width="1000" alt="API 명세서1" src="https://user-images.githubusercontent.com/51039577/233567324-b00c9c1b-0679-4b90-ab82-7d70091e60b1.png">
+<img width="1000" alt="API 명세서2" src="https://user-images.githubusercontent.com/51039577/233567474-2cd57670-328b-4b19-a66d-96510ee55ec7.png">
+
+<br>
+
+## 📋 E-R Diagram
+<img width="1000" alt="ERD" src="https://user-images.githubusercontent.com/51039577/216359977-d3818314-4d74-483f-a30e-7fce2f44a6f8.png">
+
+<br>
+
+## ✅ Test Case 
+- pytest와 (async한 test code를 작성하기 위해) httpx를 사용하여 테스트 코드를 작성했습니다.
+- S3를 이용하는 함수 테스트 시, monkeypatch를 사용해서 mocking된 함수를 대신 실행했습니다.
+- 테스트 케이스를 작성함으로써, API에 수정사항이 생겼을 때 어떤 부분에서 이슈가 있는지 정확하게 확인할 수 있었습니다.
+<img width="1000" alt="Test Case" src="https://user-images.githubusercontent.com/51039577/233592103-1baab1fd-344f-478f-8fea-35aa0eb4e12c.png">
 
 
 
-### 2. 댓글 및 대댓글 구현
-대댓글의 경우 엔티티 구조안에서 셀프조인을 참조하여 계층을 가지도록 구현했습니다.
+<br>
+
+## 🌍 배포
+Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
+<!-- ➡️ [서비스 주소](http://1234) -->
+
+## 📂 Directory Structure
+<img width="300" alt="Directory Structure" src="https://user-images.githubusercontent.com/51039577/233581094-32b7f3a8-ec79-4dc7-80a8-fa471f01d703.png">
+
+## 🕸 System Architecture
+<img width="1000" alt="System Architecture" src="">
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
 
 ---
+
+<br>
 
 ## Set-up requirement
 
