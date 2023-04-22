@@ -2,15 +2,8 @@
 
 ## 📃 프로젝트 개요
 - 블로그 서비스의 API를 개발한 프로젝트입니다.
-- FastAPI, SQL로 만든 blog 입니다.
-- JWT토큰을 사용하여 회원가입, 로그인, 로그아웃 기능을 제공합니다.
 
-<!-- 게임의 구조를 알아보는 프로젝트입니다.
-JWT토큰을 사용하여 회원가입, 로그인, 로그아웃 기능을 제공합니다.
-redis queue를 이용해 특정 게임을 여러명의 유저들이 함께 사용할때 충돌이 일어나지 않게 설계하였습니다.
-레이드의 시작, 종료, 레이드 상태조회, 랭킹조회등을 제공합니다.
-랭킹조회시 redis 캐싱기능을 이용해 데이터베이스로의 직접적인 호출을 최소화 하였습니다. -->
-
+<br>
 
 ## ⚙️ 개발 환경
 - ![macosm1 badge](https://img.shields.io/badge/MacOS%20M1-000000.svg?style=flat&logo=macOS&logoColor=white)
@@ -19,6 +12,8 @@ redis queue를 이용해 특정 게임을 여러명의 유저들이 함께 사�
 - ![docker badge](https://img.shields.io/badge/Docker-2496ED.svg?style=flate&logo=Docker&logoColor=white)
 - ![postman badge](https://img.shields.io/badge/postman-FF6C37?style=flat&logo=Postman&logoColor=white)
 - ![swagger badge](https://img.shields.io/badge/Swagger-85EA2D.svg?style=flat&logo=Swagger&logoColor=black)
+
+<br>
 
 ## 🛠 사용 기술
 **Server**
@@ -40,11 +35,6 @@ redis queue를 이용해 특정 게임을 여러명의 유저들이 함께 사�
 - ![nginx badge](https://img.shields.io/badge/Nginx-1.23.0-%23009639?logo=NGINX&locoColor=white)
 - ![uvicorn badge](https://img.shields.io/badge/Uvicorn-0.20-499848.svg?style=flat&logo=Gunicorn&logoColor=white)
 
-<!-- <img src="https://img.shields.io/badge/JWT-000000?style=flat&logo=JSON%20web%20tokens&logoColor=white"/>
-<img src="https://img.shields.io/badge/Nginx-009639?style=flat&logo=nginx&logoColor=white"/>
-<img src="https://img.shields.io/badge/Gunicorn-499848?style=flat&logo=Gunicorn&logoColor=white"/> -->
-
-
 
 <br>
 
@@ -58,7 +48,9 @@ redis queue를 이용해 특정 게임을 여러명의 유저들이 함께 사�
 <br>
 
 ## 📋 E-R Diagram
-<img width="1000" alt="ERD" src="https://user-images.githubusercontent.com/51039577/216359977-d3818314-4d74-483f-a30e-7fce2f44a6f8.png">
+<img width="1000" alt="ERD" src="https://user-images.githubusercontent.com/51039577/233566785-e7423380-de51-4de2-b67d-b170168fd670.png">
+❗️ 대댓글 구현 시 엔티티 구조 안에서 셀프조인을 참조하여 계층을 가지도록 구현했습니다.
+
 
 <br>
 
