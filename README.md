@@ -74,7 +74,12 @@ redis queue를 이용해 특정 게임을 여러명의 유저들이 함께 사�
 
 ## 🌍 배포
 Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
-<!-- ➡️ [서비스 주소](http://1234) -->
+
+➡️ [서비스 주소](13.124.201.55)
+
+기본 URL은 404 페이지 입니다.
+
+❗️ 현재 비용의 문제로 서버 접속은 불가능합니다.
 
 ## 📂 Directory Structure
 <img width="300" alt="Directory Structure" src="https://user-images.githubusercontent.com/51039577/233581094-32b7f3a8-ec79-4dc7-80a8-fa471f01d703.png">
@@ -86,9 +91,12 @@ Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
 
 <br>
 
----
 
 <br>
+<br>
+<br>
+
+---
 
 ## Set-up requirement
 
