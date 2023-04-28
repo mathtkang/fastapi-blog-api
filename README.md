@@ -35,7 +35,6 @@
 - ![nginx badge](https://img.shields.io/badge/Nginx-1.23.0-%23009639?logo=NGINX&locoColor=white)
 - ![uvicorn badge](https://img.shields.io/badge/Uvicorn-0.20-499848.svg?style=flat&logo=Gunicorn&logoColor=white)
 
-
 <br>
 
 ## 📙 API 명세서
@@ -51,7 +50,6 @@
 <img width="1000" alt="ERD" src="https://user-images.githubusercontent.com/51039577/233566785-e7423380-de51-4de2-b67d-b170168fd670.png">
 ❗️ 대댓글 구현 시 엔티티 구조 안에서 셀프조인을 참조하여 계층을 가지도록 구현했습니다.
 
-
 <br>
 
 ## ✅ Test Case 
@@ -59,8 +57,6 @@
 - S3를 이용하는 함수 테스트 시, monkeypatch를 사용해서 mocking된 함수를 대신 실행했습니다.
 - 테스트 케이스를 작성함으로써, API에 수정사항이 생겼을 때 어떤 부분에서 이슈가 있는지 정확하게 확인할 수 있었습니다.
 <img width="1000" alt="Test Case" src="https://user-images.githubusercontent.com/51039577/233592103-1baab1fd-344f-478f-8fea-35aa0eb4e12c.png">
-
-
 
 <br>
 
@@ -73,17 +69,21 @@ Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
 
 ❗️ 현재 비용의 문제로 서버 접속은 불가능합니다.
 
+<br>
+
 ## 📂 Directory Structure
 <img width="300" alt="Directory Structure" src="https://user-images.githubusercontent.com/51039577/233581094-32b7f3a8-ec79-4dc7-80a8-fa471f01d703.png">
+
+<br>
 
 ## 🕸 System Architecture
 <img width="1000" alt="System Architecture" src="">
 
 
 
+
+
 <br>
-
-
 <br>
 <br>
 <br>
@@ -103,12 +103,13 @@ Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
 
 ## Set-up steps
 
-1. `pyenv shell > activate virtualenv
+1. `pyenv shell` > activate virtualenv
 2. `poetry update` or `poetry lock` > setting apply pyproject.toml
 3. `python main.py` or `uvicorn main:app --reload` > start app
 
 ## Migration guide
-1. alembic revision --autogenerate > make migration
-2. alembic upgrade head > migrate
+1. `alembic revision --autogenerate` > make migration
+2. `alembic upgrade head` > migrate
+
 
 If you want more information  for alembic go to this [page](https://alembic.sqlalchemy.org/en/latest/)
