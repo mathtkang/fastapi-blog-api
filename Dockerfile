@@ -24,12 +24,23 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update -y
-RUN apt-get install -y python3-pip
+RUN apt-get update 
+RUN apt-get install python3-pip
+RUN pip3 install poetry
+RUN poetry install
 
 # install dependencies
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+# COPY requirements.txt .
+# RUN pip3 install -r requirements.txt
+
+# copy project requirement files here to ensure they will be cached.
+# WORKDIR $PYSETUP_PATH
+# COPY poetry.lock pyproject.toml ./
+
+# install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
+# RUN poetry install --no-dev
+
+
 
 # copy project
 COPY . .
