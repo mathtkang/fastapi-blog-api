@@ -32,6 +32,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # copy project
-# COPY . .
+COPY . .
 
 CMD ["poetry", "run", "python3", "main.py"]
