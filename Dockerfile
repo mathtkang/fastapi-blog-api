@@ -20,18 +20,32 @@ FROM python:3.10
 RUN mkdir /app
 WORKDIR /app
 
-# set env variables
+# set env variables: for python
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# for pip
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    PIP_ROOT_USER_ACTION=ignore 
+    # # poetry:
+    # POETRY_VERSION=1.3.2 \
+    # POETRY_NO_INTERACTION=1 \
+    # POETRY_VIRTUALENVS_CREATE=false \
+    # POETRY_CACHE_DIR='/var/cache/pypoetry' \
+    # POETRY_HOME='/usr/local'
+
 RUN apt-get update -y
 RUN apt-get install -y python3-pip
-RUN pip3 install poetry
-RUN poetry install
 
-# install dependencies
-# COPY requirements.txt .
-# RUN pip3 install -r requirements.txt
+# # using poetry
+# RUN pip3 install poetry
+# RUN poetry install
+
+# [install dependencies]
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
 
 # copy project requirement files here to ensure they will be cached.
 # WORKDIR $PYSETUP_PATH
@@ -41,8 +55,8 @@ RUN poetry install
 # RUN poetry install --no-dev
 
 
-
 # copy project
 COPY . .
 
-CMD ["poetry", "run", "python3", "main.py"]
+# CMD ["poetry", "run", "python3", "main.py"]
+CMD ["python3", "main.py"]
