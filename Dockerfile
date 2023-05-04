@@ -27,10 +27,13 @@ RUN pip3 install poetry
 # poetry init 은 아니다! 이미 pyproject.toml이 있으니까
 # poetry install 로 가상환경을 설치한다.
 RUN poetry install
-# poetry shell 로 가상환경에 들어간다.
-RUN poetry shell
 
-CMD ["python3", "main.py"]
+
+# poetry shell 로 가상환경에 들어간다.
+# RUN poetry shell
+
+CMD ["poetry", "shell", "python3", "main.py"]
+# CMD ["poetry", "run", "python3", "main.py"]
 
 
 
