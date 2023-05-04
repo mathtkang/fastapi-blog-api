@@ -32,8 +32,8 @@ RUN poetry install
 # poetry shell 로 가상환경에 들어간다.
 # RUN poetry shell
 
-CMD ["poetry", "shell", "python3", "main.py"]
-# CMD ["poetry", "run", "python3", "main.py"]
+# CMD ["poetry", "shell", "python3", "main.py"]
+CMD ["poetry", "run", "python3", "main.py"]
 
 
 
