@@ -19,8 +19,10 @@ COPY pyproject.toml /app/pyproject.toml
 # (여기까지, app 폴더에는 pyproject.toml 만 존재한다!)
 
 
-# 만약에 poetry 가 없다고 하면 아래 명령어 실행 -> 안 그럴 것 같다! because 
-RUN pip3 install "poetry==$POETRY_VERSION"
+# install poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN export PATH="/home/ubuntu/.local/bin:$PATH"
+
 
 # poetry init 은 아니다! 이미 pyproject.toml이 있으니까
 # poetry install 로 가상환경을 설치한다.
