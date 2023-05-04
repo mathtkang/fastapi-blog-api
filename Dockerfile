@@ -20,9 +20,9 @@ COPY pyproject.toml /app/pyproject.toml
 
 
 # install poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
-RUN export PATH="/home/ubuntu/.local/bin:$PATH"
-
+# RUN curl -sSL https://install.python-poetry.org | python3 -
+# RUN export PATH="/home/ubuntu/.local/bin:$PATH"
+RUN pip3 install poetry
 
 # poetry init 은 아니다! 이미 pyproject.toml이 있으니까
 # poetry install 로 가상환경을 설치한다.
