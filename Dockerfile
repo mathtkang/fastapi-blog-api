@@ -1,62 +1,92 @@
-# pull the official docker image
 FROM python:3.10
 
-# RUN apt-get update -y
-# RUN apt-get install -y python3-pip
+ENV PYTHONUNBUFFERED 1
+
+# 'mkdir app'이라는 명령어 실행
+RUN mkdir /app
+# 'cd app': 만들어진 'app' 폴더에 들어감
+WORKDIR /app
+
+# update & install
+RUN apt-get update && apt-get install -y \
+    python3-pip
+    # nginx
+
+# Copy files: COPY <호스트OS 파일 경로> <Docker 컨테이너 안에서의 경로>
+COPY pyproject.toml /app/pyproject.toml
+
+
+# (여기까지, app 폴더에는 pyproject.toml 만 존재한다!)
+
+
+# 만약에 poetry 가 없다고 하면 아래 명령어 실행 -> 안 그럴 것 같다! because 
+# RUN pip3 install "poetry==$POETRY_VERSION"
+
+# poetry init 은 아니다! 이미 pyproject.toml이 있으니까
+# poetry install 로 가상환경을 설치한다.
+RUN poetry install
+# poetry shell 로 가상환경에 들어간다.
+RUN poetry shell
+
+CMD ["python3", "main.py"]
+
+
+
 
 # # COPY <호스트OS 파일 경로> <Docker 컨테이너 안에서의 경로>
 # COPY . /fastapi-blog
 # # 소스코드있을 때, 컨테이너에서 WORKDIR로 '소스코드 받을 directory(=code)'로 이동한다.
 # WORKDIR /fastapi-blog
 
-# RUN pip3 install poetry
-# RUN poetry install
-
-# CMD ["poetry", "run", "python3", "main.py"]
 
 
 
-# set work directory
-RUN mkdir /app
-WORKDIR /app
-
-# set env variables: for python
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# for pip
-ENV PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_DEFAULT_TIMEOUT=100 \
-    PIP_ROOT_USER_ACTION=ignore 
-    # # poetry:
-    # POETRY_VERSION=1.3.2 \
-    # POETRY_NO_INTERACTION=1 \
-    # POETRY_VIRTUALENVS_CREATE=false \
-    # POETRY_CACHE_DIR='/var/cache/pypoetry' \
-    # POETRY_HOME='/usr/local'
-
-RUN apt-get update -y
-RUN apt-get install -y python3-pip
-
-# # using poetry
-# RUN pip3 install poetry
-# RUN poetry install
-
-# [install dependencies]
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
-
-# copy project requirement files here to ensure they will be cached.
-# WORKDIR $PYSETUP_PATH
-# COPY poetry.lock pyproject.toml ./
-
-# install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
-# RUN poetry install --no-dev
 
 
-# copy project
-COPY . .
 
-# CMD ["poetry", "run", "python3", "main.py"]
-CMD ["python3", "main.py"]
+# Install packages
+# RUN pip install --upgrade pip
+# RUN pip install -r requirements.txt
+
+
+
+
+
+
+
+
+# poetry 하는건 일단 대기!
+
+# ENV YOUR_ENV=${YOUR_ENV} \
+#   PYTHONFAULTHANDLER=1 \
+#   PYTHONUNBUFFERED=1 \
+
+#   PYTHONHASHSEED=random \
+#   PIP_NO_CACHE_DIR=off \
+#   PIP_DISABLE_PIP_VERSION_CHECK=on \
+#   PIP_DEFAULT_TIMEOUT=100 \
+#   POETRY_VERSION=1.0.0
+
+
+# # 환경만들어주기
+
+# # Install dependencies
+# RUN apt-get update && apt-get install -y \
+#     software-properties-common \
+#     curl \
+#     python3.10 \
+#     python3-pip
+
+# # System deps:      # 이건 맞는듯!
+# RUN pip install "poetry==$POETRY_VERSION"
+
+# # Copy only requirements to cache them in docker layer
+# WORKDIR /code
+# COPY poetry.lock pyproject.toml /code/
+
+# # Project initialization:
+# RUN poetry config virtualenvs.create false \
+#   && poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
+
+# # Creating folders, and files for a project:
+# COPY . /code
