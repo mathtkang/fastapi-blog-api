@@ -4,7 +4,6 @@ services:
   backend:
     build: .
     container_name: backend
-    # TODO
     # entrypoint: sh -c "pipenv run python manage.py collectstatic --no-input && pipenv run uwsgi --ini uwsgi.ini"
     ports:
       - 8000:8000
