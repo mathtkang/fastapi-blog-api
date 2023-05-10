@@ -1,5 +1,9 @@
 # FastAPI-Blog
 
+### 🚀 [서비스 바로가기](http://3.39.239.219/docs)
+
+<br>
+
 ## 📃 프로젝트 개요
 - 블로그 서비스의 API를 개발한 프로젝트입니다.
 
@@ -60,14 +64,9 @@
 
 <br>
 
-## 🌍 배포
-Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
+## 🌍 배포 | [서비스 주소](http://3.39.239.219/docs)
+AWS EC2 인스턴스에 Uvicorn, NginX를 사용하여 배포하였습니다.
 
-➡️ [서비스 주소](13.124.201.55)
-
-기본 URL은 404 페이지 입니다.
-
-❗️ 현재 비용의 문제로 서버 접속은 불가능합니다.
 
 <br>
 
@@ -76,8 +75,8 @@ Docker, NginX, Gunicorn을 사용하여 AWS EC2 서버에 배포하였습니다.
 
 <br>
 
-## 🕸 System Architecture
-<img width="1000" alt="System Architecture" src="">
+<!-- ## 🕸 System Architecture
+<img width="1000" alt="System Architecture" src=""> -->
 
 
 
